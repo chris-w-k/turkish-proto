@@ -40,6 +40,16 @@ Get caught and the retry level is rebuilt from **only the words you missed**, wi
 wider turn budget. It's spaced repetition wearing a rescue costume — the player never
 sees a drill, they see another go, and they win it.
 
+## Sound
+
+Everything is synthesised in the browser with WebAudio. There are no audio files.
+
+The background bed is an 8-bar loop in **D Hicaz** — the makam whose augmented second
+between E flat and F sharp is what makes it read as Turkish rather than as generic
+chiptune. A 25% pulse wave carries the melody over a root-and-fifth drone, with a very
+quiet darbuka pattern underneath. It ducks when the man from the corner table walks
+over, swells when he produces the flowers, and cuts dead on the gunshot.
+
 ## What's faked, and what isn't
 
 **Faked:** twelve hand-written turns, three tap-chips per answer, no model in the loop.
@@ -61,11 +71,12 @@ Pressure is `turns + misses`; he arrives at `patience`. The defaults are tuned s
 player at roughly 70% first-try accuracy finishes the order just as he gets there —
 the near-miss band is the design target, not an accident.
 
+Music level is `MUS.vol`; the melody itself is the `MEL` array, in beats.
+
 ## Running it
 
-One self-contained HTML file. No dependencies, no build step, no backend. Sound is
-generated in the browser with WebAudio — square waves and filtered noise, no audio
-files. Open `index.html`, or serve the folder with anything:
+One self-contained HTML file. No dependencies, no build step, no backend. Open
+`index.html`, or serve the folder with anything:
 
 ```bash
 python3 -m http.server
@@ -74,7 +85,8 @@ python3 -m http.server
 ## Notes
 
 Browsers require a gesture before any audio can start, so the **Start** button on the
-title screen doubles as that gesture. There's an **Sfx** toggle in the top bar.
+title screen doubles as that gesture. There's an **Sfx** toggle in the top bar, which
+mutes the music too.
 
 The player character is a simplified Riz, borrowed from
 [long-way-home](https://github.com/chris-w-k/long-way-home).
