@@ -612,8 +612,100 @@ body{
     muted=!muted;
     sndBtn.textContent=muted?'Muted':'Sfx';
     sndBtn.setAttribute('aria-pressed',String(!muted));
-    if(!muted) sfx.click();
+    var c=ac();
+    if(c&&MUS.gain){ MUS.gain.gain.setTargetAtTime(muted?0:MUS.vol,c.currentTime,0.05); }
+    if(!muted){ sfx.click(); if(MUS.ready&&!MUS.on) startMusic(); }
   });
+
+
+  // ---------------------------------------------------------------
+  // background loop: 8 bars in D Hicaz — the makam whose augmented
+  // second (E flat to F sharp) is what makes it read as Turkish.
+  // Pulse-wave melody, fifth drone, and a very quiet darbuka.
+  // ---------------------------------------------------------------
+  var N={D3:146.83,A2:110.00,D4:293.66,Eb4:311.13,F4s:369.99,G4:392.00,
+         A4:440.00,Bb4:466.16,C5:523.25,D5:587.33};
+  var BPM=88, B=60/BPM, BARS=8, LOOP=BARS*4*B;
+  var MEL=[
+    [0,N.A4,2],[2,N.G4,1],[3,N.F4s,1],
+    [4,N.Eb4,2],[6,N.D4,2],
+    [8,N.D4,1],[9,N.Eb4,1],[10,N.F4s,1],[11,N.G4,1],
+    [12,N.A4,2.5],
+    [15.5,N.C5,.5],
+    [16,N.Bb4,2],[18,N.A4,2],
+    [20,N.G4,1],[21,N.F4s,1],[22,N.Eb4,2],
+    [23.5,N.D4,.5],
+    [24,N.D4,1],[25,N.F4s,1],[26,N.G4,1],[27,N.A4,1],
+    [28,N.D5,1],[29,N.C5,.5],[29.5,N.Bb4,.5],[30,N.A4,2]
+  ];
+  var MUS={on:false,ready:false,timer:null,at:0,gain:null,wave:null,vol:0.45};
+
+  function pulseWave(c){
+    if(MUS.wave) return MUS.wave;
+    var n=24, real=new Float32Array(n), imag=new Float32Array(n);
+    for(var i=1;i<n;i++){ imag[i]=(2/(i*Math.PI))*Math.sin(Math.PI*i*0.25); }
+    MUS.wave=c.createPeriodicWave(real,imag); return MUS.wave;
+  }
+  function musBus(c){
+    if(!MUS.gain){ MUS.gain=c.createGain(); MUS.gain.gain.value=muted?0:MUS.vol; MUS.gain.connect(c.destination); }
+    return MUS.gain;
+  }
+  function mNote(c,freq,at,dur,vol,tri){
+    var o=c.createOscillator(), g=c.createGain();
+    if(tri){ o.type='triangle'; } else { o.setPeriodicWave(pulseWave(c)); }
+    o.frequency.setValueAtTime(freq,at);
+    g.gain.setValueAtTime(0.0001,at);
+    g.gain.exponentialRampToValueAtTime(vol,at+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,at+dur*0.94);
+    o.connect(g); g.connect(musBus(c)); o.start(at); o.stop(at+dur);
+  }
+  function mHit(c,at,dur,vol,cut){
+    var n=Math.floor(c.sampleRate*dur), buf=c.createBuffer(1,n,c.sampleRate), d=buf.getChannelData(0);
+    for(var i=0;i<n;i++){ d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.4); }
+    var src=c.createBufferSource(); src.buffer=buf;
+    var f=c.createBiquadFilter(); f.type='lowpass'; f.frequency.setValueAtTime(cut,at);
+    var g=c.createGain(); g.gain.setValueAtTime(vol,at);
+    g.gain.exponentialRampToValueAtTime(0.0001,at+dur);
+    src.connect(f); f.connect(g); g.connect(musBus(c)); src.start(at); src.stop(at+dur);
+  }
+  function scheduleLoop(){
+    var c=ac(); if(!c||!MUS.on) return;
+    var t0=MUS.at;
+    MEL.forEach(function(n){ mNote(c,n[1],t0+n[0]*B,n[2]*B,0.075,false); });
+    for(var b=0;b<BARS;b++){
+      var bt=t0+b*4*B;
+      mNote(c,N.D3,bt,1.7*B,0.05,true);          // drone, root
+      mNote(c,N.A2,bt+2*B,1.7*B,0.042,true);     // and its fifth
+      mHit(c,bt,0.13,0.10,240);                  // düm
+      mHit(c,bt+1.5*B,0.05,0.05,3200);           // tek
+      mHit(c,bt+3*B,0.05,0.045,3000);            // tek
+    }
+    MUS.at=t0+LOOP;
+    MUS.timer=setTimeout(scheduleLoop,(LOOP-0.5)*1000);
+  }
+  function startMusic(){
+    var c=ac(); if(!c||MUS.on) return;
+    MUS.on=true; MUS.ready=true;
+    musBus(c).gain.cancelScheduledValues(c.currentTime);
+    musBus(c).gain.setValueAtTime(muted?0:MUS.vol,c.currentTime);
+    MUS.at=c.currentTime+0.12;
+    scheduleLoop();
+  }
+  function stopMusic(fade){
+    var c=ac();
+    if(c&&MUS.gain){
+      MUS.gain.gain.cancelScheduledValues(c.currentTime);
+      MUS.gain.gain.setValueAtTime(MUS.gain.gain.value,c.currentTime);
+      MUS.gain.gain.linearRampToValueAtTime(0.0001,c.currentTime+(fade||0.25));
+    }
+    MUS.on=false; clearTimeout(MUS.timer);
+  }
+  function duckMusic(mult,secs){          // mult is a fraction of the bed level
+    var c=ac(); if(!c||!MUS.gain||muted) return;
+    MUS.gain.gain.cancelScheduledValues(c.currentTime);
+    MUS.gain.gain.setValueAtTime(MUS.gain.gain.value,c.currentTime);
+    MUS.gain.gain.linearRampToValueAtTime(Math.max(0.0001,MUS.vol*mult),c.currentTime+(secs||0.4));
+  }
 
   // crude frame sequencer: [[ms, fn], ...]
   function seq(steps){
@@ -780,7 +872,7 @@ body{
       [520, function(){ sfx.right(); armL.setAttribute('d','M14 38 q -6 -4 -9 -2'); }],
 
       // 2 — the man from the corner table arrives, hand in his coat
-      [820, function(){ sfx.dread();
+      [820, function(){ sfx.dread(); duckMusic(0.22,.45);
                         gang.setAttribute('transform','translate(44,0) scale(1.1) translate(0,-8)');
                         bulge.classList.remove('hide'); grip.classList.add('hide');
                         gArmR.setAttribute('d','M35 32 q 6 8 -3 14');
@@ -791,7 +883,7 @@ body{
       [1520,function(){ sfx.heart(); }],
 
       // 4 — flowers.
-      [1850,function(){ sfx.bloom();
+      [1850,function(){ sfx.bloom(); duckMusic(1.35,.7);
                         bulge.classList.add('hide'); grip.classList.add('hide');
                         gArmR.setAttribute('d','M35 32 q 11 6 12 17');
                         gFistR.setAttribute('cx','47'); gFistR.setAttribute('cy','50');
@@ -825,7 +917,7 @@ body{
   function shotSequence(){
     seq([
       // 1 — he arrives and squares up, hand still inside the coat
-      [0,   function(){ sfx.dread();
+      [0,   function(){ sfx.dread(); duckMusic(0.18,.4);
                         gang.setAttribute('transform','translate(70,0) scale(1.14) translate(0,-10)');
                         bulge.classList.remove('hide'); grip.classList.add('hide');
                         flowers.classList.add('hide');
@@ -849,7 +941,7 @@ body{
                         gMouth.setAttribute('d','M18 30 q 6 -6 12 0'); }],
 
       // 4 — bang
-      [1750,function(){ sfx.shot(); flash.classList.remove('hide');
+      [1750,function(){ stopMusic(0.05); sfx.shot(); flash.classList.remove('hide');
                         whiteout.classList.add('on'); flashMsg('BANG!');
                         stage.classList.add('bigshake');
                         rizAt(-10,0); }],
@@ -882,7 +974,7 @@ body{
 
   function snatchSequence(){
     var keys=['cay','su','seker','ekmek','borek','hesap'], steps=[];
-    steps.push([0, function(){ sfx.dread();
+    steps.push([0, function(){ sfx.dread(); duckMusic(0.18,.4);
       gang.setAttribute('transform','translate(74,0) scale(1.14) translate(0,-10)');
       bulge.classList.remove('hide'); grip.classList.add('hide');
       gArmR.setAttribute('d','M35 32 q 6 8 -3 14'); gFistR.setAttribute('opacity','0');
@@ -906,7 +998,7 @@ body{
       rizAt(0,4); }]);
     steps.push([2630, function(){ gang.setAttribute('transform','translate(-40,0) scale(1.1)'); sfx.walk(); }]);
     steps.push([2880, function(){ gang.setAttribute('transform','translate(-120,0) scale(1.05)'); sfx.walk(); }]);
-    steps.push([3130, function(){ sfx.slam(); shake(); vign.classList.add('on'); }]);
+    steps.push([3130, function(){ stopMusic(0.2); sfx.slam(); shake(); vign.classList.add('on'); }]);
     steps.push([3900, function(){ finish(false); }]);
     seq(steps);
   }
@@ -942,6 +1034,7 @@ body{
   ovB.onclick=function(){ start(LEVEL,false); el('title').classList.remove('off'); };
   el('play').addEventListener('click',function(){
     sfx.click();                      // doubles as the gesture browsers need before audio
+    startMusic();
     el('title').classList.add('off');
   });
 
@@ -969,6 +1062,7 @@ body{
     rescueTag.classList.toggle('on',!!rescue);
     hudScene.textContent=rescue?'Second chance':'Kadıköy · L1';
     over.classList.remove('on');
+    if(MUS.ready){ if(MUS.on){ duckMusic(1,.5); } else { startMusic(); } }
     paint(); renderTurn();
   }
 
