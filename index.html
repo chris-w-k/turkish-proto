@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Escape Loop - playable prototype of a stakes layer wrapped around a language-tutor turn loop. No dependencies.">
+<meta name="description" content="Escape Loop - Level 1: Ordering at the Cafe. A playable prototype. No dependencies.">
 <style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Escape Loop Prototype</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -30,19 +30,16 @@
   --shadow:0 1px 2px rgba(0,0,0,.4),0 20px 50px -26px rgba(0,0,0,.9);
 }
 *{box-sizing:border-box}
-body{background:var(--ground);color:var(--ink);font-family:"Literata",Georgia,serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
-.wrap{max-width:1080px;margin:0 auto;padding:26px 22px 64px}
-.eyebrow{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-faint)}
-h1{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:clamp(28px,4.2vw,40px);line-height:1;letter-spacing:-.035em;margin:10px 0 0}
-h1 .lit{color:var(--ember)}
-.sub{color:var(--ink-soft);max-width:64ch;margin:11px 0 0;font-size:15.5px}
-.stack{display:grid;grid-template-columns:minmax(0,376px) minmax(0,1fr);gap:44px;align-items:start;margin-top:26px}
-@media(max-width:880px){.stack{grid-template-columns:1fr;gap:32px}}
-
+body{
+  background:var(--ground);color:var(--ink);
+  font-family:"Literata",Georgia,serif;-webkit-font-smoothing:antialiased;
+  min-height:100vh;min-height:100dvh;
+  display:flex;align-items:center;justify-content:center;padding:16px;
+}
 .dev{
   --panel:#FFF9EF; --panel-2:#F3E8D7; --panel-line:#DCCCB3;
   --txt:#2E2519; --txt-soft:#6B5C46; --tr:#1B5E7E; --ok:#1F8A5F; --no:#C4381C;
-  width:100%;max-width:376px;height:min(690px,82vh);min-height:580px;
+  width:100%;max-width:392px;height:min(660px,calc(100dvh - 32px));min-height:520px;
   border-radius:30px;overflow:hidden;position:relative;background:var(--panel);
   box-shadow:var(--shadow);border:1px solid var(--line);
   display:flex;flex-direction:column;font-family:"Literata",Georgia,serif;color:var(--txt);
@@ -61,7 +58,7 @@ h1 .lit{color:var(--ember)}
 .bar{height:6px;border-radius:4px;background:rgba(255,255,255,.26);overflow:hidden}
 .bar i{display:block;height:100%;width:10%;border-radius:4px;background:linear-gradient(90deg,#3FCF9E,#8CF0C9);transition:width .5s cubic-bezier(.3,.9,.3,1)}
 
-.stage{position:relative;flex:0 0 50%;overflow:hidden;background:#F0D9B5}
+.stage{position:relative;flex:0 0 auto;aspect-ratio:360/210;overflow:hidden;background:#F0D9B5}
 .stage svg{display:block;width:100%;height:100%}
 .stage.shake{animation:shk .4s ease}
 .stage.bigshake{animation:shk .5s ease 2}
@@ -131,24 +128,34 @@ h1 .lit{color:var(--ember)}
 .rescue-tag{position:absolute;top:48px;left:50%;transform:translateX(-50%);z-index:6;font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;background:var(--no);color:#fff;padding:3px 9px;border-radius:20px;display:none}
 .rescue-tag.on{display:block}
 
-.notes h2{font-family:"Bricolage Grotesque",sans-serif;font-weight:700;font-size:22px;letter-spacing:-.02em;margin:0 0 10px}
-.notes h3{font-family:"Bricolage Grotesque",sans-serif;font-weight:700;font-size:15px;margin:24px 0 6px}
-.notes p{font-size:15px;color:var(--ink-soft);margin:0 0 12px;max-width:60ch}
-.notes code{font-family:"JetBrains Mono",monospace;font-size:.85em;background:var(--surface-2);padding:1px 5px;border-radius:4px}
-.notes ul{margin:0 0 14px;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:9px;max-width:60ch}
-.notes ul li{position:relative;padding-left:17px;font-size:15px;color:var(--ink-soft)}
-.notes ul li::before{content:"";position:absolute;left:0;top:.62em;width:6px;height:6px;border-radius:1px;background:var(--ink-faint)}
-.notes ul li b{color:var(--ink);font-weight:600}
-.tune{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:16px 18px;margin:20px 0 0;box-shadow:var(--shadow);max-width:460px}
-.tune h4{font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-faint);margin:0 0 12px;font-weight:600}
-.row{display:grid;grid-template-columns:104px 1fr 40px;gap:12px;align-items:center;margin-bottom:9px;font-size:13.5px}
-.row label{color:var(--ink-soft)}
-.row output{font-family:"JetBrains Mono",monospace;font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
-input[type=range]{width:100%;accent-color:var(--jade)}
-input[type=range]:focus-visible,input[type=checkbox]:focus-visible{outline:2px solid var(--jade);outline-offset:3px}
-.endrow{display:flex;align-items:center;gap:10px;margin-top:14px;padding-top:13px;border-top:1px solid var(--line-soft);font-size:13.5px;color:var(--ink-soft)}
-.endrow input{accent-color:var(--ember);width:16px;height:16px}
-.tune .hint{font-size:12.5px;color:var(--ink-faint);margin:10px 0 0;line-height:1.45}
+/* ---------- title screen ---------- */
+.title{
+  position:absolute;inset:0;z-index:25;display:flex;flex-direction:column;
+}
+.title .scrim-top{flex:0 0 auto;aspect-ratio:360/210;background:linear-gradient(180deg,rgba(28,18,8,.10),rgba(24,15,6,.88))}
+.title .scrim-body{flex:1 1 auto;background:#1B1206;display:flex;flex-direction:column;justify-content:flex-end;padding:0 24px 30px}
+.title.off{display:none}
+.title .kicker{
+  font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+  color:#F2B535;margin-bottom:12px;
+}
+.title h2{
+  font-family:"Bricolage Grotesque",sans-serif;font-weight:800;
+  font-size:30px;line-height:1.02;letter-spacing:-.03em;color:#FFF6E4;
+  margin:0 0 12px;text-wrap:balance;
+}
+.title p{
+  font-size:15px;line-height:1.45;color:#E4D5BE;margin:0 0 22px;max-width:30ch;
+}
+.title button{
+  font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:17px;letter-spacing:-.01em;
+  padding:14px 20px;border-radius:13px;border:none;width:100%;
+  background:#F2B535;color:#2E2519;cursor:pointer;
+  box-shadow:0 4px 0 #B8861F;transition:transform .1s ease,box-shadow .1s ease;
+}
+.title button:active{transform:translateY(3px);box-shadow:0 1px 0 #B8861F}
+.title button:focus-visible{outline:2px solid #FFF6E4;outline-offset:3px}
+
 @media(prefers-reduced-motion:reduce){
   #gang,#riz,.item,.bar i,#steam{transition:none}
   .stage.shake,.toast.go{animation:none}
@@ -156,13 +163,7 @@ input[type=range]:focus-visible,input[type=checkbox]:focus-visible{outline:2px s
 }
 </style>
 
-<div class="wrap">
-  <div class="eyebrow">NovaPals · playable prototype · no dependencies</div>
-  <h1>Escape <span class="lit">Loop</span></h1>
-  <p class="sub">Riz is ordering breakfast in Istanbul. Emre is behind the counter. The man at the corner table is losing patience — and every wrong answer costs you two steps of his, not one.</p>
-
-  <div class="stack">
-    <div class="dev" id="dev">
+<div class="dev" id="dev">
       <div class="hud">
         <div class="hud-top">
           <span id="hud-scene" style="white-space:nowrap">Kadıköy · L1</span>
@@ -176,7 +177,7 @@ input[type=range]:focus-visible,input[type=checkbox]:focus-visible{outline:2px s
       <div class="rescue-tag" id="rescue-tag">Second chance</div>
 
       <div class="stage" id="stage">
-        <svg viewBox="0 0 360 210" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+        <svg viewBox="0 0 360 210" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
           <!-- wall -->
           <rect x="0" y="0" width="360" height="168" fill="#E8CFA6"/>
           <rect x="0" y="0" width="360" height="52" fill="#DCBE93"/>
@@ -194,7 +195,7 @@ input[type=range]:focus-visible,input[type=checkbox]:focus-visible{outline:2px s
             <circle cx="312" cy="112" r="4" fill="#F2B535"/>
           </g>
           <rect x="300" y="4" width="52" height="14" rx="3" fill="#1B5E7E"/>
-          <text x="326" y="15" font-family="monospace" font-size="9" fill="#FFF" text-anchor="middle" letter-spacing="1">ÇIKIŞ</text>
+          <text x="326" y="15" font-family="JetBrains Mono, monospace" font-size="9" fill="#FFF" text-anchor="middle" letter-spacing="1">ÇIKIŞ</text>
           <!-- lamps -->
           <g stroke="#7A5A38" stroke-width="2">
             <path d="M170 0 v14 M232 0 v20"/>
@@ -409,43 +410,21 @@ input[type=range]:focus-visible,input[type=checkbox]:focus-visible{outline:2px s
           <p id="ov-p"></p>
           <div class="stats" id="ov-stats"></div>
           <button id="ov-a"></button>
-          <button class="ghost" id="ov-b">Start over</button>
+          <button class="ghost" id="ov-b">Title screen</button>
+        </div>
+      </div>
+
+      <div class="title" id="title">
+        <div class="scrim-top"></div>
+        <div class="scrim-body">
+          <div class="kicker">Escape Loop</div>
+          <h2>Level 1: Ordering at the Café</h2>
+          <p>Order breakfast in a backstreet café but watch out, the locals don't appreciate too many mistakes…</p>
+          <button id="play" type="button">Start</button>
         </div>
       </div>
     </div>
 
-    <div class="notes">
-      <h2>What to look for</h2>
-      <p>Play it twice — once carefully, once missing three or four on purpose. The second run is the one that matters: the man at the corner table closes the distance, and the retry afterwards is built from only the words you got wrong.</p>
-      <ul>
-        <li><b>He moves one step per turn — two if you're wrong.</b> That's the whole pressure model, and it's why a miss feels different from a slow answer. Nothing moves on a clock.</li>
-        <li><b>Your order is the progress bar.</b> Every item you successfully ask for lands on the counter and stays there. Six items, one finished breakfast.</li>
-        <li><b>Repairs re-ask, they don't give it away.</b> Miss <em>Şeker var mı?</em> and Emre tells you the rule — questions take <em>mı</em> — then asks you to build it again with a different word.</li>
-        <li><b>Hint costs half the points</b> and removes one wrong option. A real trade.</li>
-        <li><b>Three right in a row surges.</b> Bonus point, and he gains no ground at all that turn.</li>
-        <li><b>He telegraphs it.</b> Past a third of his patience his hand drifts to his coat; past two thirds it's inside; near the end you can see what he's holding. You get three turns of warning, so losing never arrives out of nowhere.</li>
-      </ul>
-
-      <h3>The economy, live</h3>
-      <p>Tuned so a child at roughly 70% first-try accuracy finishes the order just as he arrives. Sliders apply on the next run.</p>
-
-      <div class="tune">
-        <h4>Level tuning</h4>
-        <div class="row"><label for="s-goal">Order size</label><input type="range" id="s-goal" min="10" max="30" value="20"><output id="o-goal">20</output></div>
-        <div class="row"><label for="s-budget">His patience</label><input type="range" id="s-budget" min="8" max="26" value="16"><output id="o-budget">16</output></div>
-        <div class="row"><label for="s-start">Head start</label><input type="range" id="s-start" min="0" max="8" value="2"><output id="o-start">2</output></div>
-        <div class="endrow">
-          <input type="checkbox" id="s-soft"><label for="s-soft">Soft ending — he snatches the bag and storms out instead</label>
-        </div>
-        <p class="hint">Pressure = <code>turns + misses</code>. He arrives at <code>patience</code>. Default ending is the cartoon shooting you asked for; the checkbox swaps in the version that would survive an under-12s age rating.</p>
-      </div>
-
-      <h3>What's faked, and what isn't</h3>
-      <p><b>Faked:</b> twelve hand-written turns, three chips per answer, no model in the loop. <b>Real:</b> the two counters, points scaled by interaction type, the surge, the double cost of a miss, the rule-teaching repairs, the loss condition, and the retry built from missed words.</p>
-      <p>One HTML file, no libraries — drop it in a repo and GitHub Pages serves it as-is.</p>
-    </div>
-  </div>
-</div>
 
 <script>
 (function(){
@@ -551,6 +530,10 @@ input[type=range]:focus-visible,input[type=checkbox]:focus-visible{outline:2px s
       again:{ q:'And which one do you say walking IN?',
               chips:["Görüşürüz!","Merhaba!","Teşekkürler!"], ok:1 } }
   ];
+
+  // Level config. Tuned so ~70% first-try accuracy finishes the order just as he
+  // arrives. soft:true swaps the shooting for him snatching the bag and storming out.
+  var CFG={ goal:20, patience:16, start:2, soft:false };
 
   var el=function(id){return document.getElementById(id);};
   var stage=el('stage'), gang=el('gang'), riz=el('riz'), toast=el('toast'),
@@ -902,7 +885,7 @@ input[type=range]:focus-visible,input[type=checkbox]:focus-visible{outline:2px s
 
   function loseSequence(){
     S.done=true;
-    if(el('s-soft').checked){ snatchSequence(); } else { shotSequence(); }
+    if(CFG.soft){ snatchSequence(); } else { shotSequence(); }
   }
 
   function finish(won){
@@ -917,7 +900,7 @@ input[type=range]:focus-visible,input[type=checkbox]:focus-visible{outline:2px s
         (list.length?' Shaky on: <b>'+list.join(', ')+'</b> — those come back next session.':' Nothing missed.');
       ovA.textContent='Play again'; ovA.onclick=function(){ start(LEVEL,false); };
     } else {
-      ovH.textContent = el('s-soft').checked ? 'He takes the bag.' : 'He shoots.';
+      ovH.textContent = CFG.soft ? 'He takes the bag.' : 'He shoots.';
       ovH.className='lose';
       ovP.innerHTML=list.length
         ? 'Go again with only the words that tripped you: <b>'+list.join(', ')+'</b>.'
@@ -928,12 +911,14 @@ input[type=range]:focus-visible,input[type=checkbox]:focus-visible{outline:2px s
     over.classList.add('on');
   }
 
-  ovB.onclick=function(){ start(LEVEL,false); };
+  ovB.onclick=function(){ start(LEVEL,false); el('title').classList.remove('off'); };
+  el('play').addEventListener('click',function(){
+    sfx.click();                      // doubles as the gesture browsers need before audio
+    el('title').classList.add('off');
+  });
 
   function start(turns,rescue){
-    var GOAL=parseInt(el('s-goal').value,10),
-        PAT=parseInt(el('s-budget').value,10),
-        ST=parseInt(el('s-start').value,10);
+    var GOAL=CFG.goal, PAT=CFG.patience, ST=CFG.start;
     var seen={}, q=[];
     turns.forEach(function(t){ if(!seen[t.q]){seen[t.q]=1;q.push(t);} });
     S={ queue:q.map(function(o){var c={};for(var k in o){c[k]=o[k];}c.isRepair=false;return c;}),
@@ -958,11 +943,6 @@ input[type=range]:focus-visible,input[type=checkbox]:focus-visible{outline:2px s
     over.classList.remove('on');
     paint(); renderTurn();
   }
-
-  ['goal','budget','start'].forEach(function(k){
-    var s=el('s-'+k), o=el('o-'+k);
-    s.addEventListener('input',function(){ o.textContent=s.value; });
-  });
 
   start(LEVEL,false);
 })();
