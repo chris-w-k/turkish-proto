@@ -4,8 +4,8 @@ A prototype of a **stakes layer** wrapped around a language-tutor conversation. 
 learning loop on its own is a chat window and a number that goes up; the same loop
 inside a casual-game shell is a scene where every answer moves something you can see.
 
-Riz is ordering breakfast in a café in Kadıköy. Emre is behind the counter. The man
-at the corner table is losing patience.
+**Level 1: Ordering at the Café.** Riz is ordering breakfast in a backstreet café in
+Kadıköy. Emre is behind the counter. The man at the corner table is losing patience.
 
 **Play it:** https://chris-w-k.github.io/turkish-proto/
 
@@ -23,14 +23,16 @@ is worth +1, situational production +3. A hint costs half the points and removes
 wrong option. Three correct in a row surges — bonus point, and he gains no ground.
 
 Past a third of his patience his hand drifts to his coat; past two thirds it's inside;
-near the end you can see what he's holding. The loss is telegraphed three turns out.
+near the end you can see what he's holding. Whatever happens at the end, you had three
+turns of warning.
 
 ### Endings
 
-- **Out the door** — full order, paid up, Riz walks into the daylight.
-- **He shoots** — cartoon violence, pixel blood. Default.
-- **He takes the bag** — same tension, no gunfire. Toggle in the tuning panel; this is
-  the one that would survive an under-12s age rating.
+- **Out the door** — full order, paid up, and the man from the corner table turns out
+  to have been reaching for something other than what you feared.
+- **He shoots** — cartoon violence, pixel blood.
+- **He takes the bag** — same tension, no gunfire. Set `CFG.soft = true` in the script
+  to swap it in; this is the version that would survive an under-12s age rating.
 
 ### Losing is a second chance
 
@@ -49,10 +51,15 @@ builds an engine.
 
 ## Tuning
 
-The panel beside the game changes order size, his patience and the starting head start,
-and swaps the ending. Changes apply on the next run. Defaults are tuned so a player at
-roughly 70% first-try accuracy finishes the order just as he arrives — the near-miss
-band is the design target.
+Near the top of the `<script>` block:
+
+```js
+var CFG = { goal:20, patience:16, start:2, soft:false };
+```
+
+Pressure is `turns + misses`; he arrives at `patience`. The defaults are tuned so a
+player at roughly 70% first-try accuracy finishes the order just as he gets there —
+the near-miss band is the design target, not an accident.
 
 ## Running it
 
@@ -66,8 +73,8 @@ python3 -m http.server
 
 ## Notes
 
-Browsers require a gesture before any audio can start, so the first tap on an answer
-doubles as that gesture. There's a **Sfx** toggle in the top bar.
+Browsers require a gesture before any audio can start, so the **Start** button on the
+title screen doubles as that gesture. There's an **Sfx** toggle in the top bar.
 
 The player character is a simplified Riz, borrowed from
 [long-way-home](https://github.com/chris-w-k/long-way-home).
