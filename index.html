@@ -54,7 +54,9 @@ h1 .lit{color:var(--ember)}
 }
 .hud-top{display:flex;justify-content:space-between;align-items:center;font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)}
 .pips{display:flex;gap:3px;align-items:center}
-.pip{width:6px;height:6px;border-radius:2px;background:#FF8A5C;box-shadow:0 1px 2px rgba(0,0,0,.4)}
+.pip{width:6px;height:6px;border-radius:2px;background:#FF8A5C;box-shadow:0 1px 2px rgba(0,0,0,.4);flex:0 0 auto}
+.pips.tight .pip{width:4px;height:4px;border-radius:1px}
+.pips.tight{gap:2px}
 .pip.spent{background:rgba(255,255,255,.24)}
 .bar{height:6px;border-radius:4px;background:rgba(255,255,255,.26);overflow:hidden}
 .bar i{display:block;height:100%;width:10%;border-radius:4px;background:linear-gradient(90deg,#3FCF9E,#8CF0C9);transition:width .5s cubic-bezier(.3,.9,.3,1)}
@@ -163,7 +165,7 @@ input[type=range]:focus-visible,input[type=checkbox]:focus-visible{outline:2px s
     <div class="dev" id="dev">
       <div class="hud">
         <div class="hud-top">
-          <span id="hud-scene">Kadıköy · L1</span>
+          <span id="hud-scene" style="white-space:nowrap">Kadıköy · L1</span>
           <span style="display:flex;gap:8px;align-items:center">
             <button class="sndbtn" id="snd" type="button" aria-pressed="true">Sfx</button>
             <span class="pips" id="hud-pips"></span>
@@ -254,6 +256,27 @@ input[type=range]:focus-visible,input[type=checkbox]:focus-visible{outline:2px s
                   <path d="M59 57 l10 -4 l-3 4 l9 1 l-11 3 l2 -4 z" fill="#FFF3B0"/>
                 </g>
               </g>
+              <!-- what was actually in the coat, if you win -->
+              <g id="flowers" class="hide">
+                <path d="M46 54 Q52 44 56 36 M46 54 Q56 48 64 42 M46 54 Q49 42 52 30"
+                      stroke="#2E7D32" stroke-width="2" fill="none" stroke-linecap="round"/>
+                <path d="M50 47 q5 -4 8 -2 M52 42 q-5 -3 -8 -1" stroke="#3C8B40" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+                <g transform="translate(56,36)">
+                  <circle cx="0" cy="-4" r="3" fill="#E4407A"/><circle cx="4" cy="-1" r="3" fill="#E4407A"/>
+                  <circle cx="2" cy="4" r="3" fill="#E4407A"/><circle cx="-2" cy="4" r="3" fill="#E4407A"/>
+                  <circle cx="-4" cy="-1" r="3" fill="#E4407A"/><circle cx="0" cy="0" r="2" fill="#F2B535"/>
+                </g>
+                <g transform="translate(64,42)">
+                  <circle cx="0" cy="-3.4" r="2.6" fill="#FFFFFF"/><circle cx="3.4" cy="-1" r="2.6" fill="#FFFFFF"/>
+                  <circle cx="2" cy="3.2" r="2.6" fill="#FFFFFF"/><circle cx="-2" cy="3.2" r="2.6" fill="#FFFFFF"/>
+                  <circle cx="-3.4" cy="-1" r="2.6" fill="#FFFFFF"/><circle cx="0" cy="0" r="1.8" fill="#F2B535"/>
+                </g>
+                <g transform="translate(52,30)">
+                  <circle cx="0" cy="-3.4" r="2.6" fill="#F2B535"/><circle cx="3.4" cy="-1" r="2.6" fill="#F2B535"/>
+                  <circle cx="2" cy="3.2" r="2.6" fill="#F2B535"/><circle cx="-2" cy="3.2" r="2.6" fill="#F2B535"/>
+                  <circle cx="-3.4" cy="-1" r="2.6" fill="#F2B535"/><circle cx="0" cy="0" r="1.8" fill="#E4407A"/>
+                </g>
+              </g>
               <!-- head -->
               <rect x="14" y="8" width="20" height="22" rx="5" fill="#C98D5A" class="skin"/>
               <rect x="12" y="4" width="24" height="6" rx="2" fill="#241C33"/>
@@ -263,6 +286,11 @@ input[type=range]:focus-visible,input[type=checkbox]:focus-visible{outline:2px s
               <rect x="23" y="16" width="2" height="2" fill="#15121B"/>
               <path d="M17 24 h14 v3 h-14 z" fill="#3A2A1C"/>
               <path id="g-mouth" d="M20 28 q 4 2 8 0" stroke="#5A2418" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <g id="sparkle" class="hide">
+                <path d="M6 0 l1.6 4 l4 1.6 l-4 1.6 l-1.6 4 l-1.6 -4 l-4 -1.6 l4 -1.6 z" fill="#FFD34D"/>
+                <path d="M42 6 l1.2 3 l3 1.2 l-3 1.2 l-1.2 3 l-1.2 -3 l-3 -1.2 l3 -1.2 z" fill="#FFE9A8"/>
+                <path d="M24 -6 l1 2.6 l2.6 1 l-2.6 1 l-1 2.6 l-1 -2.6 l-2.6 -1 l2.6 -1 z" fill="#FFD34D"/>
+              </g>
               <!-- anger marks -->
               <g id="steam">
                 <path d="M8 2 q 4 -5 0 -9" stroke="#C4381C" stroke-width="2" fill="none" stroke-linecap="round"/>
@@ -535,7 +563,8 @@ input[type=range]:focus-visible,input[type=checkbox]:focus-visible{outline:2px s
       smoke=el('smoke'), doorPanel=el('door-panel'), shaftLight=el('shaft-light'),
       whiteout=el('whiteout'), vign=el('vign'), sndBtn=el('snd'),
       armL=el('riz-armL'), armR=el('riz-armR'), legF=el('riz-legF'), legB=el('riz-legB'),
-      gArmR=el('g-armR'), gFistR=el('g-fistR'), bulge=el('bulge'), grip=el('grip');
+      gArmR=el('g-armR'), gFistR=el('g-fistR'), bulge=el('bulge'), grip=el('grip'),
+      flowers=el('flowers'), sparkle=el('sparkle');
   var skins=document.querySelectorAll('#gang .skin');
   var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var S={};
@@ -590,7 +619,10 @@ input[type=range]:focus-visible,input[type=checkbox]:focus-visible{outline:2px s
     dirge:function(){ [392,349,294,196].forEach(function(f,i){ tone(f,.55+i*.20,.26,'triangle',.13); }); },
     rustle:function(){ noise(0,.10,.16,2200,700); },
     slam:function(){ noise(0,.16,.34,700,90); tone(60,.02,.20,'triangle',.20,34); },
-    grumble:function(){ tone(120,0,.30,'sawtooth',.10,80); }
+    grumble:function(){ tone(120,0,.30,'sawtooth',.10,80); },
+    dread:function(){ tone(110,0,.34,'sawtooth',.12,72); },
+    bloom:function(){ [659,880,1046,1318].forEach(function(f,i){ tone(f,i*.07,.22,'triangle',.13); });
+                      tone(1760,.30,.30,'triangle',.08); }
   };
   sndBtn.addEventListener('click',function(){
     muted=!muted;
@@ -649,6 +681,7 @@ input[type=range]:focus-visible,input[type=checkbox]:focus-visible{outline:2px s
     bar.style.width=(Math.min(S.p/S.goal,1)*100).toFixed(1)+'%';
     var s='';
     for(var k=0;k<S.patience;k++){ s+='<i class="pip'+(k<S.pressure?' spent':'')+'"></i>'; }
+    pips.className='pips'+(S.patience>18?' tight':'');
     pips.innerHTML=s;
   }
 
@@ -756,30 +789,47 @@ input[type=range]:focus-visible,input[type=checkbox]:focus-visible{outline:2px s
 
   function winSequence(){
     S.done=true;
-    var end=seq([
-      // 1 — Emre bags it up, Riz reaches out
+    seq([
+      // 1 — Emre bags the order up and Riz takes it
       [0,   function(){ sfx.rustle(); armR.setAttribute('d','M34 38 q 12 0 16 6'); }],
       [260, function(){ sfx.rustle(); clearItems(); tray.classList.remove('hide'); }],
-      // 2 — tray in hand, both arms up under it
       [520, function(){ sfx.right(); armL.setAttribute('d','M14 38 q -6 -4 -9 -2'); }],
-      // 3 — the walk out, four crude strides
-      [800, function(){ stride(1); rizAt(34,-2); sfx.walk(); }],
-      [1000,function(){ stride(2); rizAt(70,0);  sfx.walk(); }],
-      [1200,function(){ stride(3); rizAt(108,-2);sfx.walk();
-                        gang.setAttribute('transform','translate(0,4) scale(.94)');
-                        steam.style.opacity=0; gMouth.setAttribute('d','M20 29 q 4 -3 8 0'); }],
-      [1400,function(){ stride(4); rizAt(146,0); sfx.walk(); }],
-      // 4 — door swings, daylight floods in
-      [1560,function(){ sfx.door(); doorPanel.setAttribute('transform','translate(30,0) scale(.6,1)');
+
+      // 2 — and now the man from the corner table steps up, hand in his coat
+      [820, function(){ sfx.dread();
+                        gang.setAttribute('transform','translate(44,0) scale(1.1) translate(0,-8)');
+                        bulge.classList.remove('hide'); grip.classList.add('hide');
+                        gArmR.setAttribute('d','M35 32 q 6 8 -3 14');
+                        gFistR.setAttribute('opacity','0'); }],
+
+      // 3 — flowers.
+      [1240,function(){ sfx.bloom();
+                        bulge.classList.add('hide'); grip.classList.add('hide');
+                        gArmR.setAttribute('d','M35 32 q 11 6 12 17');
+                        gFistR.setAttribute('cx','47'); gFistR.setAttribute('cy','50');
+                        gFistR.setAttribute('opacity','1');
+                        flowers.classList.remove('hide');
+                        steam.style.opacity=0; sparkle.classList.remove('hide');
+                        for(var i=0;i<skins.length;i++){ skins[i].setAttribute('fill','rgb(201,141,90)'); }
+                        gMouth.setAttribute('d','M18 27 q 6 6 12 0');
+                        flashMsg('ÇİÇEKLER!'); }],
+      [1560,function(){ armL.setAttribute('d','M14 38 q -10 -2 -12 -8'); }],   // Riz takes them
+      [1800,function(){ sfx.right(); flashMsg('TEŞEKKÜRLER!'); }],
+
+      // 4 — out into the morning
+      [2120,function(){ stride(1); rizAt(34,-2); sfx.walk(); }],
+      [2320,function(){ stride(2); rizAt(70,0);  sfx.walk(); }],
+      [2520,function(){ stride(3); rizAt(108,-2);sfx.walk(); }],
+      [2720,function(){ stride(4); rizAt(146,0); sfx.walk(); }],
+      [2880,function(){ sfx.door(); doorPanel.setAttribute('transform','translate(30,0) scale(.6,1)');
                         shaftLight.setAttribute('opacity','.6'); }],
-      [1700,function(){ stride(5); rizAt(184,-2); sfx.walk(); flashMsg('GÖRÜŞÜRÜZ!'); }],
-      [1900,function(){ riz.style.transition='transform .5s steps(3,end),opacity .4s steps(2,end)';
+      [3020,function(){ stride(5); rizAt(184,-2); sfx.walk(); flashMsg('GÖRÜŞÜRÜZ!'); }],
+      [3220,function(){ riz.style.transition='transform .5s steps(3,end),opacity .4s steps(2,end)';
                         rizAt(214,0); riz.style.opacity='0'; tray.style.opacity='0'; }],
-      [2250,function(){ sfx.win(); doorPanel.setAttribute('transform','translate(0,0)');
+      [3560,function(){ sfx.win(); doorPanel.setAttribute('transform','translate(0,0)');
                         shaftLight.setAttribute('opacity','0'); }],
-      [2700,function(){ finish(true); }]
+      [4000,function(){ finish(true); }]
     ]);
-    return end;
   }
 
   function shotSequence(){
@@ -787,6 +837,7 @@ input[type=range]:focus-visible,input[type=checkbox]:focus-visible{outline:2px s
       // 1 — he stops, draws
       [0,   function(){ noise(0,.16,.15,900,300);
                         bulge.classList.add('hide'); grip.classList.add('hide');
+                        flowers.classList.add('hide');
                         gArmR.setAttribute('d','M35 32 q 6 8 4 18');
                         gFistR.setAttribute('cx','39'); gFistR.setAttribute('cy','50');
                         gFistR.setAttribute('opacity','1'); }],
@@ -862,7 +913,7 @@ input[type=range]:focus-visible,input[type=checkbox]:focus-visible{outline:2px s
       '<div>Missed<b>'+list.length+'</b></div>';
     if(won){
       ovH.textContent='Out the door.'; ovH.className='win';
-      ovP.innerHTML='Full order, paid up, and he never got closer than '+(S.patience-S.pressure)+' step'+((S.patience-S.pressure)===1?'':'s')+'.'+
+      ovP.innerHTML='Full order, paid up — and it turns out he was reaching for flowers all along.'+
         (list.length?' Shaky on: <b>'+list.join(', ')+'</b> — those come back next session.':' Nothing missed.');
       ovA.textContent='Play again'; ovA.onclick=function(){ start(LEVEL,false); };
     } else {
@@ -899,6 +950,8 @@ input[type=range]:focus-visible,input[type=checkbox]:focus-visible{outline:2px s
     armL.setAttribute('d','M14 38 q -8 6 -9 18'); armR.setAttribute('d','M34 38 q 8 6 9 18');
     legF.setAttribute('d','M13 62 h10 v18 h-10 z'); legB.setAttribute('d','M25 62 h10 v18 h-10 z');
     S.armStage=0; setArm(0);
+    flowers.classList.add('hide'); sparkle.classList.add('hide');
+    gMouth.setAttribute('d','M20 28 q 4 2 8 0');
     clearItems();
     rescueTag.classList.toggle('on',!!rescue);
     hudScene.textContent=rescue?'Second chance':'Kadıköy · L1';
