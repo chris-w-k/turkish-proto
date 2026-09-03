@@ -1,0 +1,919 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Escape Loop - playable prototype of a stakes layer wrapped around a language-tutor turn loop. No dependencies.">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Escape Loop Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Literata:opsz,wght@7..72,400;7..72,600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --ground:#EDF1F4; --surface:#FBFCFD; --surface-2:#E3EAEF;
+  --ink:#111A21; --ink-soft:#4C5D6A; --ink-faint:#7A8B98;
+  --line:#CFDAE2; --line-soft:#DFE7EC;
+  --ember:#C63F16; --jade:#0C7360;
+  --shadow:0 1px 2px rgba(17,26,33,.06),0 18px 48px -24px rgba(17,26,33,.35);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#0E1418; --surface:#151D23; --surface-2:#1B252C;
+  --ink:#E7EEF3; --ink-soft:#9CADB9; --ink-faint:#71828F;
+  --line:#26323B; --line-soft:#1F2931; --ember:#FF7043; --jade:#3ABF9F;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 20px 50px -26px rgba(0,0,0,.9);
+}}
+:root[data-theme="dark"]{
+  --ground:#0E1418; --surface:#151D23; --surface-2:#1B252C;
+  --ink:#E7EEF3; --ink-soft:#9CADB9; --ink-faint:#71828F;
+  --line:#26323B; --line-soft:#1F2931; --ember:#FF7043; --jade:#3ABF9F;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 20px 50px -26px rgba(0,0,0,.9);
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:"Literata",Georgia,serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:26px 22px 64px}
+.eyebrow{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-faint)}
+h1{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:clamp(28px,4.2vw,40px);line-height:1;letter-spacing:-.035em;margin:10px 0 0}
+h1 .lit{color:var(--ember)}
+.sub{color:var(--ink-soft);max-width:64ch;margin:11px 0 0;font-size:15.5px}
+.stack{display:grid;grid-template-columns:minmax(0,376px) minmax(0,1fr);gap:44px;align-items:start;margin-top:26px}
+@media(max-width:880px){.stack{grid-template-columns:1fr;gap:32px}}
+
+.dev{
+  --panel:#FFF9EF; --panel-2:#F3E8D7; --panel-line:#DCCCB3;
+  --txt:#2E2519; --txt-soft:#6B5C46; --tr:#1B5E7E; --ok:#1F8A5F; --no:#C4381C;
+  width:100%;max-width:376px;height:min(690px,82vh);min-height:580px;
+  border-radius:30px;overflow:hidden;position:relative;background:var(--panel);
+  box-shadow:var(--shadow);border:1px solid var(--line);
+  display:flex;flex-direction:column;font-family:"Literata",Georgia,serif;color:var(--txt);
+}
+.hud{
+  position:absolute;top:0;left:0;right:0;z-index:6;padding:10px 13px 9px;
+  background:linear-gradient(180deg,rgba(24,16,8,.5),rgba(24,16,8,0));
+  display:flex;flex-direction:column;gap:5px;
+}
+.hud-top{display:flex;justify-content:space-between;align-items:center;font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.pips{display:flex;gap:3px;align-items:center}
+.pip{width:6px;height:6px;border-radius:2px;background:#FF8A5C;box-shadow:0 1px 2px rgba(0,0,0,.4)}
+.pip.spent{background:rgba(255,255,255,.24)}
+.bar{height:6px;border-radius:4px;background:rgba(255,255,255,.26);overflow:hidden}
+.bar i{display:block;height:100%;width:10%;border-radius:4px;background:linear-gradient(90deg,#3FCF9E,#8CF0C9);transition:width .5s cubic-bezier(.3,.9,.3,1)}
+
+.stage{position:relative;flex:0 0 50%;overflow:hidden;background:#F0D9B5}
+.stage svg{display:block;width:100%;height:100%}
+.stage.shake{animation:shk .4s ease}
+.stage.bigshake{animation:shk .5s ease 2}
+#door-panel{transition:transform .45s steps(3,end)}
+#shaft-light{transition:opacity .4s steps(2,end)}
+.whiteout{position:absolute;inset:0;background:#FFF8E1;opacity:0;pointer-events:none;z-index:8}
+.whiteout.on{animation:wo .34s steps(2,end)}
+@keyframes wo{0%{opacity:.95}60%{opacity:.35}100%{opacity:0}}
+.vign{position:absolute;inset:0;pointer-events:none;z-index:7;opacity:0;transition:opacity .8s ease;
+  background:radial-gradient(ellipse at 42% 78%,rgba(0,0,0,0) 30%,rgba(0,0,0,.72) 100%)}
+.vign.on{opacity:1}
+.sndbtn{
+  font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+  background:rgba(0,0,0,.32);color:#fff;border:1px solid rgba(255,255,255,.35);
+  border-radius:20px;padding:2px 8px;cursor:pointer;line-height:1.5;
+}
+.sndbtn:focus-visible{outline:2px solid #fff;outline-offset:2px}
+@keyframes shk{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}60%{transform:translateX(4px)}}
+#gang{transition:transform .6s cubic-bezier(.34,1.2,.5,1)}
+#riz{transition:transform .5s ease}
+.item{opacity:0;transform:translateY(-8px);transition:opacity .4s ease,transform .4s cubic-bezier(.3,1.4,.5,1)}
+.item.on{opacity:1;transform:translateY(0)}
+.hide{display:none}
+#steam{opacity:0;transition:opacity .4s ease}
+.toast{
+  position:absolute;left:50%;top:38%;transform:translateX(-50%);z-index:7;
+  font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:21px;letter-spacing:-.02em;
+  color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.6);opacity:0;pointer-events:none;white-space:nowrap;
+}
+.toast.go{animation:pop 1s ease forwards}
+@keyframes pop{0%{opacity:0;transform:translateX(-50%) translateY(10px) scale(.85)}25%{opacity:1;transform:translateX(-50%) translateY(-4px) scale(1.06)}70%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-22px)}}
+
+.turn{flex:1 1 auto;background:var(--panel);border-top:2px solid var(--panel-line);padding:13px 15px 15px;display:flex;flex-direction:column;gap:9px;min-height:0;position:relative;z-index:2}
+.pal{display:flex;gap:9px;align-items:flex-start}
+.pal-av{flex:0 0 28px;height:28px;border-radius:50%;background:var(--panel-2);border:1.5px solid var(--panel-line);display:grid;place-items:center;margin-top:1px;overflow:hidden}
+.pal-line{font-size:15px;line-height:1.42;flex:1;min-width:0}
+.pal-line .tr{color:var(--tr);font-weight:600;background:rgba(27,94,126,.09);padding:0 3px;border-radius:3px}
+.prompt{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--txt-soft);display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.prompt .pts{color:var(--ok);font-weight:600}
+.q{font-size:14.5px;font-weight:600;line-height:1.32;margin:-2px 0 0}
+.chips{display:flex;flex-direction:column;gap:6px;margin-top:auto}
+.chip{font-family:"Literata",Georgia,serif;font-size:14.5px;font-weight:600;text-align:left;padding:10px 12px;border-radius:10px;border:1.5px solid var(--panel-line);background:#fff;color:var(--txt);cursor:pointer;width:100%;transition:transform .12s ease,background .15s ease,border-color .15s ease,opacity .2s ease}
+.chip:hover:not(:disabled){transform:translateY(-1px);border-color:var(--tr)}
+.chip:focus-visible{outline:2px solid var(--tr);outline-offset:2px}
+.chip:disabled{cursor:default}
+.chip.right{background:#E4F5EC;border-color:var(--ok);color:var(--ok)}
+.chip.wrong{background:#FBE6E0;border-color:var(--no);color:var(--no)}
+.chip.gone{opacity:.25;text-decoration:line-through}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:24px}
+.hintbtn{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.09em;text-transform:uppercase;padding:6px 9px;border-radius:7px;border:1.5px solid var(--panel-line);background:var(--panel-2);color:var(--txt-soft);cursor:pointer}
+.hintbtn:disabled{opacity:.4;cursor:default}
+.hintbtn:focus-visible{outline:2px solid var(--tr);outline-offset:2px}
+.fb{font-size:12.5px;line-height:1.3;color:var(--txt-soft);flex:1;text-align:right}
+.fb b{color:var(--ok)} .fb i{color:var(--no);font-style:normal}
+
+.over{position:absolute;inset:0;z-index:20;display:none;place-items:center;padding:24px;background:rgba(20,14,8,.66);backdrop-filter:blur(3px)}
+.over.on{display:grid}
+.card{background:var(--panel);border-radius:18px;padding:20px 18px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.45);text-align:center}
+.card h3{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:25px;letter-spacing:-.03em;margin:0 0 6px;line-height:1.05}
+.card h3.win{color:var(--ok)} .card h3.lose{color:var(--no)}
+.card p{margin:0 0 13px;font-size:14px;line-height:1.42;color:var(--txt-soft)}
+.card .stats{display:flex;justify-content:center;gap:16px;margin:0 0 15px;font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--txt-soft)}
+.card .stats b{display:block;font-size:19px;color:var(--txt);letter-spacing:-.02em;font-weight:600}
+.card button{font-family:"Bricolage Grotesque",sans-serif;font-weight:700;font-size:15px;padding:10px 18px;border-radius:11px;border:none;background:var(--tr);color:#fff;cursor:pointer;width:100%}
+.card button.ghost{background:transparent;color:var(--txt-soft);border:1.5px solid var(--panel-line);margin-top:8px}
+.card button:focus-visible{outline:2px solid var(--tr);outline-offset:2px}
+.rescue-tag{position:absolute;top:48px;left:50%;transform:translateX(-50%);z-index:6;font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;background:var(--no);color:#fff;padding:3px 9px;border-radius:20px;display:none}
+.rescue-tag.on{display:block}
+
+.notes h2{font-family:"Bricolage Grotesque",sans-serif;font-weight:700;font-size:22px;letter-spacing:-.02em;margin:0 0 10px}
+.notes h3{font-family:"Bricolage Grotesque",sans-serif;font-weight:700;font-size:15px;margin:24px 0 6px}
+.notes p{font-size:15px;color:var(--ink-soft);margin:0 0 12px;max-width:60ch}
+.notes code{font-family:"JetBrains Mono",monospace;font-size:.85em;background:var(--surface-2);padding:1px 5px;border-radius:4px}
+.notes ul{margin:0 0 14px;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:9px;max-width:60ch}
+.notes ul li{position:relative;padding-left:17px;font-size:15px;color:var(--ink-soft)}
+.notes ul li::before{content:"";position:absolute;left:0;top:.62em;width:6px;height:6px;border-radius:1px;background:var(--ink-faint)}
+.notes ul li b{color:var(--ink);font-weight:600}
+.tune{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:16px 18px;margin:20px 0 0;box-shadow:var(--shadow);max-width:460px}
+.tune h4{font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-faint);margin:0 0 12px;font-weight:600}
+.row{display:grid;grid-template-columns:104px 1fr 40px;gap:12px;align-items:center;margin-bottom:9px;font-size:13.5px}
+.row label{color:var(--ink-soft)}
+.row output{font-family:"JetBrains Mono",monospace;font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--jade)}
+input[type=range]:focus-visible,input[type=checkbox]:focus-visible{outline:2px solid var(--jade);outline-offset:3px}
+.endrow{display:flex;align-items:center;gap:10px;margin-top:14px;padding-top:13px;border-top:1px solid var(--line-soft);font-size:13.5px;color:var(--ink-soft)}
+.endrow input{accent-color:var(--ember);width:16px;height:16px}
+.tune .hint{font-size:12.5px;color:var(--ink-faint);margin:10px 0 0;line-height:1.45}
+@media(prefers-reduced-motion:reduce){
+  #gang,#riz,.item,.bar i,#steam{transition:none}
+  .stage.shake,.toast.go{animation:none}
+  .toast.go{opacity:1}
+}
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">NovaPals · playable prototype · no dependencies</div>
+  <h1>Escape <span class="lit">Loop</span></h1>
+  <p class="sub">Riz is ordering breakfast in Istanbul. Emre is behind the counter. The man at the corner table is losing patience — and every wrong answer costs you two steps of his, not one.</p>
+
+  <div class="stack">
+    <div class="dev" id="dev">
+      <div class="hud">
+        <div class="hud-top">
+          <span id="hud-scene">Kadıköy · L1</span>
+          <span style="display:flex;gap:8px;align-items:center">
+            <button class="sndbtn" id="snd" type="button" aria-pressed="true">Sfx</button>
+            <span class="pips" id="hud-pips"></span>
+          </span>
+        </div>
+        <div class="bar"><i id="hud-bar"></i></div>
+      </div>
+      <div class="rescue-tag" id="rescue-tag">Second chance</div>
+
+      <div class="stage" id="stage">
+        <svg viewBox="0 0 360 210" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+          <!-- wall -->
+          <rect x="0" y="0" width="360" height="168" fill="#E8CFA6"/>
+          <rect x="0" y="0" width="360" height="52" fill="#DCBE93"/>
+          <!-- window with the Bosphorus -->
+          <rect x="20" y="24" width="104" height="70" rx="4" fill="#8FC4DC" stroke="#7A5A38" stroke-width="4"/>
+          <rect x="20" y="70" width="104" height="24" fill="#5C9DBE"/>
+          <path d="M64 62 h26 v8 h-30 z" fill="#F2F2F0"/>
+          <rect x="74" y="54" width="5" height="9" fill="#C4381C"/>
+          <path d="M20 24 h104 M70 24 v70" stroke="#7A5A38" stroke-width="3"/>
+          <!-- door, stage right -->
+          <rect x="300" y="18" width="52" height="150" fill="#FFF6D8"/>
+          <g id="door-panel">
+            <rect x="300" y="18" width="52" height="150" rx="3" fill="#B0783F" stroke="#7A5A38" stroke-width="4"/>
+            <rect x="308" y="28" width="36" height="48" rx="2" fill="#BFE3F0"/>
+            <circle cx="312" cy="112" r="4" fill="#F2B535"/>
+          </g>
+          <rect x="300" y="4" width="52" height="14" rx="3" fill="#1B5E7E"/>
+          <text x="326" y="15" font-family="monospace" font-size="9" fill="#FFF" text-anchor="middle" letter-spacing="1">ÇIKIŞ</text>
+          <!-- lamps -->
+          <g stroke="#7A5A38" stroke-width="2">
+            <path d="M170 0 v14 M232 0 v20"/>
+          </g>
+          <path d="M158 14 h24 l-6 12 h-12 z" fill="#F2B535"/>
+          <path d="M220 20 h24 l-6 12 h-12 z" fill="#F2B535"/>
+          <!-- floor -->
+          <rect x="0" y="168" width="360" height="42" fill="#B98F5E"/>
+          <g stroke="#A67F52" stroke-width="2">
+            <path d="M0 176 h360 M0 190 h360 M40 168 v42 M120 168 v42 M200 168 v42 M280 168 v42"/>
+          </g>
+
+          <polygon id="shaft-light" points="300,22 300,168 196,168 266,22" fill="#FFF6D8" opacity="0"/>
+
+          <!-- gangster's table, back left -->
+          <g>
+            <rect x="2" y="130" width="50" height="6" rx="2" fill="#8A5A2E"/>
+            <rect x="24" y="136" width="6" height="32" fill="#7A4E26"/>
+            <path d="M10 120 l2 10 h7 l2 -10 z" fill="#B8571F"/>
+            <rect x="32" y="122" width="9" height="8" rx="1" fill="#D9C9A8"/>
+          </g>
+
+          <!-- ANGRY MAN -->
+          <g id="gang" transform="translate(0,0)">
+            <g transform="translate(26,86)">
+              <ellipse cx="24" cy="83" rx="21" ry="4" fill="rgba(60,40,20,.28)"/>
+              <rect x="12" y="60" width="10" height="22" fill="#2A2530"/>
+              <rect x="26" y="60" width="10" height="22" fill="#231F2A"/>
+              <rect x="9" y="78" width="16" height="6" rx="2" fill="#15121B"/>
+              <rect x="24" y="78" width="16" height="6" rx="2" fill="#15121B"/>
+              <path d="M11 28 h26 l4 34 h-34 z" fill="#3A3444"/>
+              <path d="M20 28 h8 l-1 34 h-6 z" fill="#EDE6D8"/>
+              <path d="M23 28 l1 8 l1 -8 z" fill="#8E2B1E"/>
+              <rect x="21" y="36" width="6" height="20" fill="#8E2B1E"/>
+              <!-- arms -->
+              <path id="g-armL" d="M13 32 q -9 12 -6 26" stroke="#3A3444" stroke-width="9" fill="none" stroke-linecap="round"/>
+              <path id="g-armR" d="M35 32 q 9 12 6 26" stroke="#2F2A38" stroke-width="9" fill="none" stroke-linecap="round"/>
+              <circle id="g-fistL" cx="7" cy="58" r="5" fill="#C98D5A" class="skin"/>
+              <circle id="g-fistR" cx="41" cy="58" r="5" fill="#C98D5A" class="skin"/>
+              <!-- what his hand is doing under the coat -->
+              <g id="bulge" class="hide">
+                <path d="M30 38 q 7 4 9 13 l -6 2 q -2 -8 -7 -11 z" fill="#2F2A38"/>
+              </g>
+              <g id="grip" class="hide">
+                <rect x="32" y="39" width="7" height="10" rx="2" fill="#1C1C22" transform="rotate(-16 35 44)"/>
+                <rect x="33" y="40" width="2" height="7" rx="1" fill="#3A3A45" transform="rotate(-16 35 44)"/>
+              </g>
+              <!-- gun, hidden till the end -->
+              <g id="gun" class="hide">
+                <rect x="41" y="55" width="18" height="5" rx="1" fill="#2B2B33"/>
+                <rect x="44" y="60" width="5" height="7" rx="1" fill="#1C1C22"/>
+                <g id="smoke" class="hide">
+                  <circle cx="62" cy="54" r="3" fill="#CFCFCF" opacity=".8"/>
+                  <circle cx="67" cy="49" r="2.4" fill="#DEDEDE" opacity=".65"/>
+                  <circle cx="71" cy="45" r="1.8" fill="#EDEDED" opacity=".5"/>
+                </g>
+                <g id="flash" class="hide">
+                  <path d="M59 57 l14 -8 l-5 8 l14 0 l-16 6 l4 -6 z" fill="#FFD34D"/>
+                  <path d="M59 57 l10 -4 l-3 4 l9 1 l-11 3 l2 -4 z" fill="#FFF3B0"/>
+                </g>
+              </g>
+              <!-- head -->
+              <rect x="14" y="8" width="20" height="22" rx="5" fill="#C98D5A" class="skin"/>
+              <rect x="12" y="4" width="24" height="6" rx="2" fill="#241C33"/>
+              <rect x="6" y="9" width="36" height="4" rx="2" fill="#241C33"/>
+              <rect x="15" y="15" width="8" height="5" rx="1" fill="#15121B"/>
+              <rect x="25" y="15" width="8" height="5" rx="1" fill="#15121B"/>
+              <rect x="23" y="16" width="2" height="2" fill="#15121B"/>
+              <path d="M17 24 h14 v3 h-14 z" fill="#3A2A1C"/>
+              <path id="g-mouth" d="M20 28 q 4 2 8 0" stroke="#5A2418" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <!-- anger marks -->
+              <g id="steam">
+                <path d="M8 2 q 4 -5 0 -9" stroke="#C4381C" stroke-width="2" fill="none" stroke-linecap="round"/>
+                <path d="M40 2 q -4 -5 0 -9" stroke="#C4381C" stroke-width="2" fill="none" stroke-linecap="round"/>
+                <path d="M44 12 l6 -4 M44 18 l7 0" stroke="#C4381C" stroke-width="2" stroke-linecap="round"/>
+              </g>
+            </g>
+          </g>
+
+          <!-- COUNTER -->
+          <rect x="196" y="126" width="132" height="8" rx="2" fill="#C79A63"/>
+          <rect x="196" y="134" width="132" height="34" fill="#9A7040"/>
+          <g stroke="#87602F" stroke-width="2"><path d="M226 134 v34 M262 134 v34 M298 134 v34"/></g>
+
+          <!-- EMRE behind the counter -->
+          <g transform="translate(250,74)">
+            <path d="M6 30 h34 l5 26 h-44 z" fill="#F4F0E6"/>
+            <path d="M14 30 h18 l2 26 h-22 z" fill="#1B5E7E"/>
+            <path d="M4 34 q -8 10 -6 20" stroke="#F4F0E6" stroke-width="8" fill="none" stroke-linecap="round"/>
+            <path d="M42 34 q 8 10 6 20" stroke="#EAE4D6" stroke-width="8" fill="none" stroke-linecap="round"/>
+            <rect x="16" y="8" width="20" height="22" rx="6" fill="#D9A46E"/>
+            <path d="M15 12 q 11 -12 22 0 l -2 -6 q -9 -6 -18 0 z" fill="#3A2A1C"/>
+            <circle cx="21" cy="19" r="1.8" fill="#2E2519"/>
+            <circle cx="31" cy="19" r="1.8" fill="#2E2519"/>
+            <path d="M20 25 h12 v2.5 h-12 z" fill="#3A2A1C"/>
+            <path d="M22 29 q 4 3 8 0" stroke="#7A4A2A" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+          </g>
+
+          <!-- THE ORDER, appearing on the counter -->
+          <g id="items">
+            <g class="item" data-k="cay"><path d="M204 112 l3 14 h10 l3 -14 z" fill="#C4501C"/><path d="M204 112 h16 v3 h-16 z" fill="#E8CFA6"/></g>
+            <g class="item" data-k="su"><rect x="226" y="106" width="9" height="20" rx="2" fill="#9FD8EC"/><rect x="228" y="102" width="5" height="5" fill="#1B5E7E"/></g>
+            <g class="item" data-k="seker"><rect x="242" y="118" width="8" height="8" rx="1" fill="#FFFFFF" stroke="#DCCCB3" stroke-width="1"/><rect x="246" y="113" width="8" height="8" rx="1" fill="#FDFBF6" stroke="#DCCCB3" stroke-width="1"/></g>
+            <g class="item" data-k="ekmek"><ellipse cx="272" cy="120" rx="14" ry="7" fill="#D69B4E"/><path d="M264 116 l4 -3 M272 115 l4 -3" stroke="#B57A33" stroke-width="2"/></g>
+            <g class="item" data-k="borek"><path d="M292 126 l6 -12 l6 12 z" fill="#E5B25E"/><path d="M296 122 h4" stroke="#B57A33" stroke-width="1.5"/></g>
+            <g class="item" data-k="hesap"><rect x="312" y="112" width="12" height="14" fill="#FFFFFF" stroke="#DCCCB3" stroke-width="1"/><path d="M314 116 h8 M314 119 h8 M314 122 h5" stroke="#A9A093" stroke-width="1"/></g>
+          </g>
+
+          <!-- RIZ -->
+          <g id="riz" transform="translate(0,0)">
+            <g transform="translate(140,96)">
+              <ellipse cx="24" cy="80" rx="20" ry="4" fill="rgba(60,40,20,.26)"/>
+              <path id="riz-legB" d="M25 62 h10 v18 h-10 z" fill="#2B57E8"/>
+              <path id="riz-legF" d="M13 62 h10 v18 h-10 z" fill="#2F5DF2"/>
+              <path d="M27 64 l4 0 -2 4 3 0 -5 7 1.5 -5 -3 0 z" fill="#F5C63A"/>
+              <rect x="11" y="78" width="13" height="7" rx="3" fill="#1A1230"/>
+              <rect x="24" y="78" width="13" height="7" rx="3" fill="#211830"/>
+              <rect x="11" y="83" width="13" height="3" rx="1.5" fill="#3B2F52"/>
+              <rect x="24" y="83" width="13" height="3" rx="1.5" fill="#3B2F52"/>
+              <rect x="12" y="56" width="24" height="7" rx="2" fill="#1A1230"/>
+              <rect x="21" y="57" width="6" height="5" rx="1" fill="#F2B535"/>
+              <path d="M12 34 q 12 -4 24 0 l 2 24 q -14 3 -28 0 z" fill="#FFFFFF"/>
+              <path d="M18 32 q 6 6 12 0 l -2 -3 q -4 3 -8 0 z" fill="#F0708F"/>
+              <path d="M12 34 q 5 -2 8 -3 l 1 27 -9 1 z" fill="#241C33"/>
+              <path d="M36 34 q -5 -2 -8 -3 l -1 27 9 1 z" fill="#2C2340"/>
+              <path id="riz-armL" d="M14 38 q -8 6 -9 18" stroke="#B5793F" stroke-width="7" fill="none" stroke-linecap="round"/>
+              <path id="riz-armR" d="M34 38 q 8 6 9 18" stroke="#A56A36" stroke-width="7" fill="none" stroke-linecap="round"/>
+              <rect x="1" y="52" width="9" height="3.5" rx="1.7" fill="#1A1230" transform="rotate(70 5 54)"/>
+              <rect x="38" y="52" width="9" height="3.5" rx="1.7" fill="#1A1230" transform="rotate(-70 43 54)"/>
+              <rect x="20" y="28" width="8" height="7" fill="#A56A36"/>
+              <path d="M24 6 q 13 0 13 14 v5 q 0 8 -13 8 t -13 -8 v-5 q 0 -14 13 -14 z" fill="#B5793F"/>
+              <path d="M11.5 20 L2 16 L11.5 12 L5 5 L14 7 L12 -3 L20 4 L24 -6 L28 4 L36 -3 L34 7 L43 5 L36.5 12 L46 16 L36.5 20
+                       L34 15 L31 11 L28 16 L25 11 L24 17 L23 11 L20 16 L17 11 L14 15 Z" fill="#5A21D0"/>
+              <path d="M24 -6 L28 4 L23.5 5 Z" fill="#8A4BF0"/>
+              <path d="M12 -3 L14.5 7 L18 6 Z" fill="#E44BA0"/>
+              <path d="M43 5 L36.5 12 L38.5 8 Z" fill="#8A4BF0"/>
+              <circle cx="19" cy="18" r="5.4" fill="#F7B7D6"/>
+              <circle cx="30" cy="18" r="5.4" fill="#F7B7D6"/>
+              <circle cx="19" cy="18" r="5.4" fill="none" stroke="#FFFFFF" stroke-width="1.7"/>
+              <circle cx="30" cy="18" r="5.4" fill="none" stroke="#FFFFFF" stroke-width="1.7"/>
+              <path d="M23.6 18 h1.8" stroke="#FFFFFF" stroke-width="1.7"/>
+              <circle cx="29" cy="26.5" r="1.6" fill="none" stroke="#F2B535" stroke-width="1"/>
+              <path d="M21 26 q 3 2 6 0" stroke="#4A2A18" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+            </g>
+          </g>
+
+          <!-- tray Riz carries out on a win -->
+          <g id="tray" class="hide" transform="translate(0,0)">
+            <rect x="170" y="130" width="30" height="4" rx="2" fill="#C79A63"/>
+            <path d="M176 118 l2 12 h7 l2 -12 z" fill="#C4501C"/>
+            <ellipse cx="193" cy="127" rx="7" ry="3.5" fill="#D69B4E"/>
+          </g>
+
+          <!-- pixel blood, lose ending -->
+          <g id="blood" class="hide"></g>
+        </svg>
+        <div class="whiteout" id="whiteout"></div>
+        <div class="vign" id="vign"></div>
+        <div class="toast" id="toast"></div>
+      </div>
+
+      <div class="turn">
+        <div class="pal">
+          <div class="pal-av" aria-hidden="true">
+            <svg viewBox="0 0 28 28" width="26" height="26">
+              <rect x="8" y="6" width="12" height="14" rx="4" fill="#D9A46E"/>
+              <path d="M7 10 q 7 -9 14 0 l -1 -5 q -6 -4 -12 0 z" fill="#3A2A1C"/>
+              <path d="M10 16 h8 v2 h-8 z" fill="#3A2A1C"/>
+              <path d="M2 28 q 12 -9 24 0 z" fill="#1B5E7E"/>
+            </svg>
+          </div>
+          <div class="pal-line" id="pal-line"></div>
+        </div>
+        <div class="prompt"><span id="p-type"></span><span class="pts" id="p-pts"></span></div>
+        <p class="q" id="p-q"></p>
+        <div class="chips" id="chips"></div>
+        <div class="foot">
+          <button class="hintbtn" id="hint">Hint · costs half</button>
+          <div class="fb" id="fb"></div>
+        </div>
+      </div>
+
+      <div class="over" id="over">
+        <div class="card">
+          <h3 id="ov-h"></h3>
+          <p id="ov-p"></p>
+          <div class="stats" id="ov-stats"></div>
+          <button id="ov-a"></button>
+          <button class="ghost" id="ov-b">Start over</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <h2>What to look for</h2>
+      <p>Play it twice — once carefully, once missing three or four on purpose. The second run is the one that matters: the man at the corner table closes the distance, and the retry afterwards is built from only the words you got wrong.</p>
+      <ul>
+        <li><b>He moves one step per turn — two if you're wrong.</b> That's the whole pressure model, and it's why a miss feels different from a slow answer. Nothing moves on a clock.</li>
+        <li><b>Your order is the progress bar.</b> Every item you successfully ask for lands on the counter and stays there. Six items, one finished breakfast.</li>
+        <li><b>Repairs re-ask, they don't give it away.</b> Miss <em>Şeker var mı?</em> and Emre tells you the rule — questions take <em>mı</em> — then asks you to build it again with a different word.</li>
+        <li><b>Hint costs half the points</b> and removes one wrong option. A real trade.</li>
+        <li><b>Three right in a row surges.</b> Bonus point, and he gains no ground at all that turn.</li>
+        <li><b>He telegraphs it.</b> Past a third of his patience his hand drifts to his coat; past two thirds it's inside; near the end you can see what he's holding. You get three turns of warning, so losing never arrives out of nowhere.</li>
+      </ul>
+
+      <h3>The economy, live</h3>
+      <p>Tuned so a child at roughly 70% first-try accuracy finishes the order just as he arrives. Sliders apply on the next run.</p>
+
+      <div class="tune">
+        <h4>Level tuning</h4>
+        <div class="row"><label for="s-goal">Order size</label><input type="range" id="s-goal" min="10" max="30" value="20"><output id="o-goal">20</output></div>
+        <div class="row"><label for="s-budget">His patience</label><input type="range" id="s-budget" min="8" max="26" value="16"><output id="o-budget">16</output></div>
+        <div class="row"><label for="s-start">Head start</label><input type="range" id="s-start" min="0" max="8" value="2"><output id="o-start">2</output></div>
+        <div class="endrow">
+          <input type="checkbox" id="s-soft"><label for="s-soft">Soft ending — he snatches the bag and storms out instead</label>
+        </div>
+        <p class="hint">Pressure = <code>turns + misses</code>. He arrives at <code>patience</code>. Default ending is the cartoon shooting you asked for; the checkbox swaps in the version that would survive an under-12s age rating.</p>
+      </div>
+
+      <h3>What's faked, and what isn't</h3>
+      <p><b>Faked:</b> twelve hand-written turns, three chips per answer, no model in the loop. <b>Real:</b> the two counters, points scaled by interaction type, the surge, the double cost of a miss, the rule-teaching repairs, the loss condition, and the retry built from missed words.</p>
+      <p>One HTML file, no libraries — drop it in a repo and GitHub Pages serves it as-is.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var T=function(s){return '<span class="tr">'+s+'</span>';};
+
+  // ---- the level. `item` puts something on the counter. `fix` teaches the RULE,
+  // ---- and `again` re-asks the same pattern with a different word.
+  var LEVEL=[
+    { type:"Comprehension", pts:1, atom:"ne istersiniz",
+      pal:'Merhaba! '+T('Ne istersiniz?'),
+      q:"What is Emre asking?",
+      chips:["What would you like?","Where are you from?","How many people?"], ok:0,
+      fix:T('istemek')+' is "to want". '+T('Ne istersiniz?')+' = what would you like?',
+      again:{ q:'So what does '+T('Su ister misiniz?')+' mean?',
+              chips:["Would you like water?","Is there water?","Water is finished."], ok:0 } },
+
+    { type:"Completion", pts:2, atom:"lütfen", item:"cay",
+      pal:'Start with tea. Ask me nicely.',
+      q:'Bir çay, ______',
+      chips:["lütfen","teşekkürler","evet"], ok:0,
+      fix:'"Please" is '+T('lütfen')+' — it goes at the end.',
+      again:{ q:'Now order a water the same way.',
+              chips:["Bir su, evet","Bir su, lütfen","Lütfen bir su yok"], ok:1 } },
+
+    { type:"Transformation", pts:2, atom:"X istiyorum", item:"su",
+      pal:T('Çay istiyorum')+' means "I want tea". The water is '+T('su')+'.',
+      q:"Say: I want water.",
+      chips:["Su istiyorum","İstiyorum su","Su var mı"], ok:0,
+      fix:'The thing comes first, then '+T('istiyorum')+'.',
+      again:{ q:'Same shape, new word — you want bread ('+T('ekmek')+').',
+              chips:["İstiyorum ekmek","Ekmek istiyorum","Ekmek lütfen"], ok:1 } },
+
+    { type:"Comprehension", pts:1, atom:"var / yok",
+      pal:'Small kitchen this morning. '+T('Çay var ama kahve yok.'),
+      q:"What can't you have?",
+      chips:["Coffee","Tea","Bread"], ok:0,
+      fix:T('var')+' = there is. '+T('yok')+' = there isn\'t.',
+      again:{ q:'So what does '+T('Börek var ama ekmek yok')+' tell you?',
+              chips:["No börek","No bread","Nothing left"], ok:1 } },
+
+    { type:"Situational", pts:3, atom:"var mı?", item:"seker",
+      pal:'No sugar on your table. Sugar is '+T('şeker')+'.',
+      q:"Ask me if there is any.",
+      chips:["Şeker var mı?","Şeker yok.","Şeker istiyorum."], ok:0,
+      fix:'To turn '+T('var')+' into a question, add '+T('mı')+' at the end.',
+      again:{ q:'Try the same question about tea.',
+              chips:["Çay mı var","Çay var mı?","Var mı çay"], ok:1 } },
+
+    { type:"Completion", pts:2, atom:"var", item:"ekmek",
+      pal:'I put a basket of warm bread down in front of you.',
+      q:'Ekmek ______',
+      chips:["var","yok","mı"], ok:0,
+      fix:'It is right there, so '+T('var')+'. '+T('yok')+' would mean it\'s gone.',
+      again:{ q:'The coffee machine is broken. Ekmek var, kahve ______',
+              chips:["var","yok","mı"], ok:1 } },
+
+    { type:"Comprehension", pts:1, atom:"başka bir şey",
+      pal:'I lean over the counter. '+T('Başka bir şey?'),
+      q:"What am I asking?",
+      chips:["Anything else?","How much?","What's your name?"], ok:0,
+      fix:T('başka')+' = other, '+T('şey')+' = thing.',
+      again:{ q:'And '+T('başka bir çay?')+' would be —',
+              chips:["No more tea?","Another tea?","Whose tea?"], ok:1 } },
+
+    { type:"Transformation", pts:2, atom:"var mı?", item:"borek",
+      pal:'The pastry is '+T('börek')+'. You know how to ask.',
+      q:"Ask if they have börek.",
+      chips:["Börek var mı?","Börek yok.","Börek lütfen."], ok:0,
+      fix:'Same question frame every time: thing + '+T('var mı?'),
+      again:{ q:'Now ask about sugar.',
+              chips:["Şeker yok mu","Şeker var mı?","Var şeker mı"], ok:1 } },
+
+    { type:"Situational", pts:2, atom:"iki",
+      pal:T('Kaç tane?')+' — how many teas?',
+      q:"Say two. (two = "+"iki)",
+      chips:["İki çay","Bir çay","Çay iki"], ok:0,
+      fix:'The number goes before the thing: '+T('iki çay')+'.',
+      again:{ q:'And three breads?',
+              chips:["Ekmek üç","Üç ekmek","Üç ekmekler"], ok:1 } },
+
+    { type:"Situational", pts:2, atom:"teşekkürler",
+      pal:'I bag it all up and slide it across.',
+      q:"Thank me.",
+      chips:["Teşekkürler!","Lütfen!","Merhaba!"], ok:0,
+      fix:T('lütfen')+' is please, '+T('teşekkürler')+' is thanks.',
+      again:{ q:'And how would you greet me tomorrow?',
+              chips:["Teşekkürler!","Merhaba!","Görüşürüz!"], ok:1 } },
+
+    { type:"Completion", pts:2, atom:"hesap", item:"hesap",
+      pal:'Time to pay. The bill is '+T('hesap')+'.',
+      q:'Hesap, ______',
+      chips:["lütfen","var","yok"], ok:0,
+      fix:'Asking for something politely: thing + '+T('lütfen')+'.',
+      again:{ q:'Ask for the menu the same way ('+T('menü')+').',
+              chips:["Menü var","Menü, lütfen","Lütfen menü yok"], ok:1 } },
+
+    { type:"Situational", pts:3, atom:"görüşürüz",
+      pal:'That man has stood up. Time to go.',
+      q:"Say goodbye — see you.",
+      chips:["Görüşürüz!","Merhaba!","Lütfen!"], ok:0,
+      fix:T('merhaba')+' opens, '+T('görüşürüz')+' closes.',
+      again:{ q:'And which one do you say walking IN?',
+              chips:["Görüşürüz!","Merhaba!","Teşekkürler!"], ok:1 } }
+  ];
+
+  var el=function(id){return document.getElementById(id);};
+  var stage=el('stage'), gang=el('gang'), riz=el('riz'), toast=el('toast'),
+      palLine=el('pal-line'), pType=el('p-type'), pPts=el('p-pts'), pQ=el('p-q'),
+      chipBox=el('chips'), hintBtn=el('hint'), fb=el('fb'), bar=el('hud-bar'),
+      pips=el('hud-pips'), over=el('over'), ovH=el('ov-h'), ovP=el('ov-p'),
+      ovStats=el('ov-stats'), ovA=el('ov-a'), ovB=el('ov-b'),
+      rescueTag=el('rescue-tag'), hudScene=el('hud-scene'), steam=el('steam'),
+      gMouth=el('g-mouth'), gun=el('gun'), flash=el('flash'), tray=el('tray'), blood=el('blood'),
+      smoke=el('smoke'), doorPanel=el('door-panel'), shaftLight=el('shaft-light'),
+      whiteout=el('whiteout'), vign=el('vign'), sndBtn=el('snd'),
+      armL=el('riz-armL'), armR=el('riz-armR'), legF=el('riz-legF'), legB=el('riz-legB'),
+      gArmR=el('g-armR'), gFistR=el('g-fistR'), bulge=el('bulge'), grip=el('grip');
+  var skins=document.querySelectorAll('#gang .skin');
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var S={};
+
+  // ---------------------------------------------------------------
+  // lo-fi bleeper: square waves and filtered noise, no files, no libs
+  // ---------------------------------------------------------------
+  var AC=null, muted=false;
+  function ac(){
+    if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; } }
+    if(AC.state==='suspended'){ AC.resume(); }
+    return AC;
+  }
+  function tone(freq,delay,dur,type,vol,glideTo){
+    var c=ac(); if(!c||muted) return;
+    var t=c.currentTime+delay;
+    var o=c.createOscillator(), g=c.createGain();
+    o.type=type||'square';
+    o.frequency.setValueAtTime(freq,t);
+    if(glideTo){ o.frequency.exponentialRampToValueAtTime(Math.max(30,glideTo),t+dur); }
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(vol||0.14,t+0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+dur+0.02);
+  }
+  function noise(delay,dur,vol,cut,cutTo){
+    var c=ac(); if(!c||muted) return;
+    var t=c.currentTime+delay, n=Math.floor(c.sampleRate*dur);
+    var buf=c.createBuffer(1,n,c.sampleRate), d=buf.getChannelData(0);
+    for(var i=0;i<n;i++){ d[i]=(Math.random()*2-1)*(1-i/n); }
+    var src=c.createBufferSource(); src.buffer=buf;
+    var f=c.createBiquadFilter(); f.type='lowpass';
+    f.frequency.setValueAtTime(cut||1200,t);
+    if(cutTo){ f.frequency.exponentialRampToValueAtTime(Math.max(60,cutTo),t+dur); }
+    var g=c.createGain(); g.gain.setValueAtTime(vol||0.2,t);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    src.connect(f); f.connect(g); g.connect(c.destination); src.start(t); src.stop(t+dur);
+  }
+  var sfx={
+    right:function(){ tone(660,0,.07); tone(990,.07,.10); },
+    wrong:function(){ tone(200,0,.16,'sawtooth',.12,120); },
+    surge:function(){ [523,659,784,1046].forEach(function(f,i){ tone(f,i*.055,.09); }); },
+    step:function(){ noise(0,.06,.14,340); tone(84,0,.09,'triangle',.10); },
+    hint:function(){ tone(880,0,.05,'triangle',.09); },
+    door:function(){ tone(988,0,.08,'triangle',.10); tone(1319,.09,.16,'triangle',.09); },
+    walk:function(){ noise(0,.05,.10,500); },
+    win:function(){ [523,659,784,1046,1318].forEach(function(f,i){ tone(f,i*.09,.13,'square',.13); });
+                    tone(1568,.46,.34,'triangle',.10); },
+    click:function(){ tone(1400,0,.02,'square',.08); tone(700,.03,.03,'square',.07); },
+    shot:function(){ noise(0,.30,.42,5000,140); tone(150,0,.26,'sine',.30,38);
+                     tone(70,.06,.30,'triangle',.18,30); },
+    dirge:function(){ [392,349,294,196].forEach(function(f,i){ tone(f,.55+i*.20,.26,'triangle',.13); }); },
+    rustle:function(){ noise(0,.10,.16,2200,700); },
+    slam:function(){ noise(0,.16,.34,700,90); tone(60,.02,.20,'triangle',.20,34); },
+    grumble:function(){ tone(120,0,.30,'sawtooth',.10,80); }
+  };
+  sndBtn.addEventListener('click',function(){
+    muted=!muted;
+    sndBtn.textContent=muted?'Muted':'Sfx';
+    sndBtn.setAttribute('aria-pressed',String(!muted));
+    if(!muted) sfx.click();
+  });
+
+  // crude frame sequencer: [[ms, fn], ...]
+  function seq(steps){
+    var scale=reduce?0.25:1;
+    steps.forEach(function(st){ setTimeout(st[1], st[0]*scale); });
+    return steps[steps.length-1][0]*scale;
+  }
+
+  function lerp(a,b,t){return a+(b-a)*t;}
+  function mix(c1,c2,t){
+    var r=Math.round(lerp(c1[0],c2[0],t)),g=Math.round(lerp(c1[1],c2[1],t)),b=Math.round(lerp(c1[2],c2[2],t));
+    return 'rgb('+r+','+g+','+b+')';
+  }
+
+  // How close his hand is to whatever is in that coat. Four stages, snapped
+  // rather than tweened — the loss is telegraphed three turns before it lands.
+  var ARM=[
+    { d:'M35 32 q 9 12 6 26',  fist:[41,58], fistOn:1, bulge:0, grip:0 },
+    { d:'M35 32 q 8 10 2 20',  fist:[37,52], fistOn:1, bulge:0, grip:0 },
+    { d:'M35 32 q 6 8 -3 14',  fist:[32,46], fistOn:0, bulge:1, grip:0 },
+    { d:'M35 32 q 4 6 -4 12',  fist:[31,44], fistOn:0, bulge:1, grip:1 }
+  ];
+  function armStage(f){ return f>=0.86?3 : f>=0.62?2 : f>=0.38?1 : 0; }
+  function setArm(n){
+    var a=ARM[n];
+    gArmR.setAttribute('d',a.d);
+    gFistR.setAttribute('cx',a.fist[0]); gFistR.setAttribute('cy',a.fist[1]);
+    gFistR.setAttribute('opacity',a.fistOn?'1':'0');
+    bulge.classList.toggle('hide',!a.bulge);
+    grip.classList.toggle('hide',!a.grip);
+  }
+
+  function paint(){
+    var f=Math.min(S.pressure/S.patience,1);
+    if(!S.done){
+      var st=armStage(f);
+      if(st!==S.armStage){
+        setArm(st);
+        if(st===2){ noise(.15,.14,.13,900,300); }        // coat shifting
+        if(st===3){ sfx.click(); }                        // something metal
+        S.armStage=st;
+      }
+    }
+    gang.setAttribute('transform','translate('+(f*66).toFixed(1)+',0) scale('+(1+f*0.12).toFixed(3)+') translate(0,'+(-f*9).toFixed(1)+')');
+    var col=mix([201,141,90],[214,45,28],f);
+    for(var i=0;i<skins.length;i++){ skins[i].setAttribute('fill',col); }
+    steam.style.opacity=f<0.34?0:((f-0.34)/0.66).toFixed(2);
+    gMouth.setAttribute('d', f<0.5 ? 'M20 28 q 4 2 8 0' : 'M19 29 q 5 -4 10 0');
+    bar.style.width=(Math.min(S.p/S.goal,1)*100).toFixed(1)+'%';
+    var s='';
+    for(var k=0;k<S.patience;k++){ s+='<i class="pip'+(k<S.pressure?' spent':'')+'"></i>'; }
+    pips.innerHTML=s;
+  }
+
+  function showItem(key){
+    var n=document.querySelector('#items .item[data-k="'+key+'"]');
+    if(n) n.classList.add('on');
+  }
+  function clearItems(){
+    var ns=document.querySelectorAll('#items .item');
+    for(var i=0;i<ns.length;i++){ ns[i].classList.remove('on'); }
+  }
+  function flashMsg(t){ toast.textContent=t; toast.classList.remove('go'); void toast.offsetWidth; toast.classList.add('go'); }
+  function shake(){ if(reduce) return; stage.classList.add('shake'); setTimeout(function(){stage.classList.remove('shake');},400); }
+
+  function shuffled(turn){
+    var idx=turn.chips.map(function(_,i){return i;});
+    for(var i=idx.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=idx[i]; idx[i]=idx[j]; idx[j]=t; }
+    return { labels: idx.map(function(i){return turn.chips[i];}), ok: idx.indexOf(turn.ok) };
+  }
+
+  function renderTurn(){
+    var turn=S.queue[S.i];
+    S.hinted=false; S.locked=false;
+    hintBtn.disabled=false; hintBtn.textContent='Hint · costs half';
+    fb.innerHTML='';
+    palLine.innerHTML=turn.pal;
+    pType.textContent=turn.type;
+    pPts.textContent='+'+turn.pts;
+    pQ.innerHTML=turn.q;
+    var sh=shuffled(turn);
+    S.okIdx=sh.ok;
+    chipBox.innerHTML='';
+    sh.labels.forEach(function(label,idx){
+      var b=document.createElement('button');
+      b.className='chip'; b.type='button'; b.textContent=label;
+      b.addEventListener('click',function(){ answer(idx); });
+      chipBox.appendChild(b);
+    });
+  }
+
+  function answer(idx){
+    if(S.locked||S.done) return;
+    S.locked=true; hintBtn.disabled=true;
+    var turn=S.queue[S.i];
+    var nodes=chipBox.querySelectorAll('.chip');
+    for(var k=0;k<nodes.length;k++){ nodes[k].disabled=true; }
+    var right=idx===S.okIdx;
+    var gain=right?(S.hinted?Math.max(1,Math.floor(turn.pts/2)):turn.pts):0;
+
+    if(right){
+      nodes[idx].classList.add('right');
+      S.streak++; S.p+=gain;
+      var surge=false;
+      if(S.streak>0 && S.streak%3===0){ S.p+=1; S.pressure=Math.max(0,S.pressure-1); surge=true; }
+      if(turn.item) showItem(turn.item);
+      S.pressure+=1;
+      fb.innerHTML='<b>+'+(gain+(surge?1:0))+'</b>'+(surge?' · he holds back':' · doğru');
+      flashMsg(surge?'SURGE +'+(gain+1):'+'+gain);
+      if(surge){ sfx.surge(); shake(); } else { sfx.right(); setTimeout(sfx.step,180); }
+    } else {
+      nodes[idx].classList.add('wrong');
+      nodes[S.okIdx].classList.add('right');
+      S.streak=0; S.missed.push(turn);
+      S.pressure+=2;
+      fb.innerHTML='<i>0</i> · he takes two steps';
+      flashMsg('YANLIŞ');
+      sfx.wrong(); setTimeout(sfx.step,200); setTimeout(sfx.step,380);
+      shake();
+      if(!turn.isRepair && turn.again){
+        S.queue.splice(S.i+1,0,{
+          type:"Repair", pts:1, atom:turn.atom, isRepair:true,
+          pal:turn.fix, q:turn.again.q, chips:turn.again.chips, ok:turn.again.ok
+        });
+      }
+    }
+    S.t++;
+    paint();
+
+    if(S.p>=S.goal){ setTimeout(winSequence,700); return; }
+    if(S.pressure>=S.patience || S.i>=S.queue.length-1){ setTimeout(loseSequence,700); return; }
+    setTimeout(function(){ S.i++; renderTurn(); },950);
+  }
+
+  hintBtn.addEventListener('click',function(){
+    if(S.locked||S.hinted) return;
+    S.hinted=true; hintBtn.disabled=true; hintBtn.textContent='Hint used';
+    var nodes=chipBox.querySelectorAll('.chip');
+    for(var k=0;k<nodes.length;k++){
+      if(k!==S.okIdx && !nodes[k].classList.contains('gone')){
+        nodes[k].classList.add('gone'); nodes[k].disabled=true; break;
+      }
+    }
+    fb.innerHTML='Half points now.';
+    sfx.hint();
+  });
+
+  function rizAt(x,y,rot){
+    riz.setAttribute('transform','translate('+x+','+(y||0)+')'+(rot?' rotate('+rot+' 160 176)':''));
+    tray.setAttribute('transform','translate('+x+','+(y||0)+')');
+  }
+  function stride(n){            // crude 2-frame walk: swap the legs, bob the body
+    if(n%2){ legF.setAttribute('d','M13 62 h10 v18 h-10 z'); legB.setAttribute('d','M27 62 h10 v18 h-10 z'); }
+    else   { legF.setAttribute('d','M11 62 h10 v18 h-10 z'); legB.setAttribute('d','M25 62 h10 v18 h-10 z'); }
+  }
+
+  function winSequence(){
+    S.done=true;
+    var end=seq([
+      // 1 — Emre bags it up, Riz reaches out
+      [0,   function(){ sfx.rustle(); armR.setAttribute('d','M34 38 q 12 0 16 6'); }],
+      [260, function(){ sfx.rustle(); clearItems(); tray.classList.remove('hide'); }],
+      // 2 — tray in hand, both arms up under it
+      [520, function(){ sfx.right(); armL.setAttribute('d','M14 38 q -6 -4 -9 -2'); }],
+      // 3 — the walk out, four crude strides
+      [800, function(){ stride(1); rizAt(34,-2); sfx.walk(); }],
+      [1000,function(){ stride(2); rizAt(70,0);  sfx.walk(); }],
+      [1200,function(){ stride(3); rizAt(108,-2);sfx.walk();
+                        gang.setAttribute('transform','translate(0,4) scale(.94)');
+                        steam.style.opacity=0; gMouth.setAttribute('d','M20 29 q 4 -3 8 0'); }],
+      [1400,function(){ stride(4); rizAt(146,0); sfx.walk(); }],
+      // 4 — door swings, daylight floods in
+      [1560,function(){ sfx.door(); doorPanel.setAttribute('transform','translate(30,0) scale(.6,1)');
+                        shaftLight.setAttribute('opacity','.6'); }],
+      [1700,function(){ stride(5); rizAt(184,-2); sfx.walk(); flashMsg('GÖRÜŞÜRÜZ!'); }],
+      [1900,function(){ riz.style.transition='transform .5s steps(3,end),opacity .4s steps(2,end)';
+                        rizAt(214,0); riz.style.opacity='0'; tray.style.opacity='0'; }],
+      [2250,function(){ sfx.win(); doorPanel.setAttribute('transform','translate(0,0)');
+                        shaftLight.setAttribute('opacity','0'); }],
+      [2700,function(){ finish(true); }]
+    ]);
+    return end;
+  }
+
+  function shotSequence(){
+    seq([
+      // 1 — he stops, draws
+      [0,   function(){ noise(0,.16,.15,900,300);
+                        bulge.classList.add('hide'); grip.classList.add('hide');
+                        gArmR.setAttribute('d','M35 32 q 6 8 4 18');
+                        gFistR.setAttribute('cx','39'); gFistR.setAttribute('cy','50');
+                        gFistR.setAttribute('opacity','1'); }],
+      [260, function(){ sfx.click(); gun.classList.remove('hide');
+                        gArmR.setAttribute('d','M35 32 q 8 6 8 22');
+                        gFistR.setAttribute('cx','41'); gFistR.setAttribute('cy','56'); }],
+      [380, function(){ gMouth.setAttribute('d','M18 30 q 6 -6 12 0'); }],
+      // 2 — bang
+      [520, function(){ sfx.shot(); flash.classList.remove('hide');
+                        whiteout.classList.add('on'); flashMsg('BANG!');
+                        stage.classList.add('bigshake');
+                        rizAt(-10,0); }],
+      [740, function(){ flash.classList.add('hide'); whiteout.classList.remove('on');
+                        stage.classList.remove('bigshake'); }],
+      // 3 — two crude frames of falling
+      [820, function(){ riz.style.transition='transform .18s steps(2,end)'; rizAt(-14,22,-34); }],
+      [1080,function(){ rizAt(-18,54,-76); noise(0,.12,.22,420); }],
+      // 4 — the blood, three staggered bursts
+      [1260,function(){ blood.innerHTML=''; blood.classList.remove('hide'); splat(4); }],
+      [1420,function(){ splat(4); }],
+      [1600,function(){ splat(5); sfx.dirge(); }],
+      // 5 — smoke off the barrel, lights down
+      [1800,function(){ smoke.classList.remove('hide'); vign.classList.add('on'); }],
+      [2700,function(){ finish(false); }]
+    ]);
+  }
+  function splat(n){
+    var px=blood.innerHTML;
+    for(var i=0;i<n;i++){
+      var x=112+Math.round(Math.random()*10)*5, y=174+Math.round(Math.random()*4)*5;
+      px+='<rect x="'+x+'" y="'+y+'" width="5" height="5" fill="'+(i%3?'#A81E14':'#7C120B')+'"/>';
+    }
+    blood.innerHTML=px;
+  }
+
+  function snatchSequence(){
+    var keys=['cay','su','seker','ekmek','borek','hesap'], steps=[];
+    steps.push([0, function(){ sfx.grumble();
+      gang.setAttribute('transform','translate(74,0) scale(1.14) translate(0,-10)');
+      gMouth.setAttribute('d','M18 30 q 6 -6 12 0'); }]);
+    steps.push([420, function(){ bulge.classList.add('hide'); grip.classList.add('hide');
+      gArmR.setAttribute('d','M35 32 q 14 2 22 4');
+      gFistR.setAttribute('cx','57'); gFistR.setAttribute('cy','36');
+      gFistR.setAttribute('opacity','1');
+      flashMsg('HEY!'); shake(); }]);
+    keys.forEach(function(k,i){
+      steps.push([600+i*110, function(){
+        var n=document.querySelector('#items .item[data-k="'+k+'"]');
+        if(n && n.classList.contains('on')){ n.classList.remove('on'); sfx.rustle(); }
+      }]);
+    });
+    steps.push([1320, function(){ gArmR.setAttribute('d','M35 32 q 9 12 6 26');
+      gFistR.setAttribute('cx','41'); gFistR.setAttribute('cy','58');
+      armL.setAttribute('d','M14 38 q -6 10 -7 16'); armR.setAttribute('d','M34 38 q 6 10 7 16');
+      rizAt(0,4); }]);
+    steps.push([1500, function(){ gang.setAttribute('transform','translate(-40,0) scale(1.1)'); sfx.walk(); }]);
+    steps.push([1750, function(){ gang.setAttribute('transform','translate(-120,0) scale(1.05)'); sfx.walk(); }]);
+    steps.push([2000, function(){ sfx.slam(); shake(); vign.classList.add('on'); }]);
+    steps.push([2600, function(){ finish(false); }]);
+    seq(steps);
+  }
+
+  function loseSequence(){
+    S.done=true;
+    if(el('s-soft').checked){ snatchSequence(); } else { shotSequence(); }
+  }
+
+  function finish(won){
+    var uniq={}, list=[];
+    S.missed.forEach(function(m){ if(!uniq[m.atom]){uniq[m.atom]=1;list.push(m.atom);} });
+    ovStats.innerHTML='<div>Order<b>'+Math.min(S.p,S.goal)+'/'+S.goal+'</b></div>'+
+      '<div>Patience<b>'+Math.min(S.pressure,S.patience)+'/'+S.patience+'</b></div>'+
+      '<div>Missed<b>'+list.length+'</b></div>';
+    if(won){
+      ovH.textContent='Out the door.'; ovH.className='win';
+      ovP.innerHTML='Full order, paid up, and he never got closer than '+(S.patience-S.pressure)+' step'+((S.patience-S.pressure)===1?'':'s')+'.'+
+        (list.length?' Shaky on: <b>'+list.join(', ')+'</b> — those come back next session.':' Nothing missed.');
+      ovA.textContent='Play again'; ovA.onclick=function(){ start(LEVEL,false); };
+    } else {
+      ovH.textContent = el('s-soft').checked ? 'He takes the bag.' : 'He shoots.';
+      ovH.className='lose';
+      ovP.innerHTML=list.length
+        ? 'Go again with only the words that tripped you: <b>'+list.join(', ')+'</b>.'
+        : 'You ran out of turns before the order was done.';
+      ovA.textContent=list.length?'Second chance':'Try again';
+      ovA.onclick=function(){ if(list.length){ start(S.missed.slice(),true); } else { start(LEVEL,false); } };
+    }
+    over.classList.add('on');
+  }
+
+  ovB.onclick=function(){ start(LEVEL,false); };
+
+  function start(turns,rescue){
+    var GOAL=parseInt(el('s-goal').value,10),
+        PAT=parseInt(el('s-budget').value,10),
+        ST=parseInt(el('s-start').value,10);
+    var seen={}, q=[];
+    turns.forEach(function(t){ if(!seen[t.q]){seen[t.q]=1;q.push(t);} });
+    S={ queue:q.map(function(o){var c={};for(var k in o){c[k]=o[k];}c.isRepair=false;return c;}),
+        i:0, p:ST, t:0, pressure:0, streak:0, missed:[], done:false, locked:false, hinted:false, okIdx:0,
+        goal: rescue?Math.min(GOAL,ST+q.reduce(function(a,b){return a+b.pts;},0)):GOAL,
+        patience: rescue?Math.max(6,q.length*2+2):PAT };
+    riz.style.opacity='1'; riz.style.transition='transform .5s steps(2,end)';
+    riz.setAttribute('transform','translate(0,0)');
+    tray.classList.add('hide'); tray.style.opacity='1'; tray.setAttribute('transform','translate(0,0)');
+    gun.classList.add('hide'); flash.classList.add('hide'); blood.classList.add('hide');
+    smoke.classList.add('hide'); blood.innerHTML='';
+    vign.classList.remove('on'); whiteout.classList.remove('on');
+    doorPanel.setAttribute('transform','translate(0,0)'); shaftLight.setAttribute('opacity','0');
+    armL.setAttribute('d','M14 38 q -8 6 -9 18'); armR.setAttribute('d','M34 38 q 8 6 9 18');
+    legF.setAttribute('d','M13 62 h10 v18 h-10 z'); legB.setAttribute('d','M25 62 h10 v18 h-10 z');
+    S.armStage=0; setArm(0);
+    clearItems();
+    rescueTag.classList.toggle('on',!!rescue);
+    hudScene.textContent=rescue?'Second chance':'Kadıköy · L1';
+    over.classList.remove('on');
+    paint(); renderTurn();
+  }
+
+  ['goal','budget','start'].forEach(function(k){
+    var s=el('s-'+k), o=el('o-'+k);
+    s.addEventListener('input',function(){ o.textContent=s.value; });
+  });
+
+  start(LEVEL,false);
+})();
+</script>
+
+</body>
+</html>
